@@ -1,0 +1,8 @@
+.env.local
+.env
+node_modules/
+.next/
+uploads/
+*.log
+.DS_Store
+prisma/migrations/*.lock

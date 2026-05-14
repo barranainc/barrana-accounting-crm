@@ -1,0 +1,41 @@
+databases:
+  - name: barrana-crm-db
+    plan: free
+    databaseName: barrana_crm
+    user: barrana
+
+services:
+  - type: web
+    plan: free
+    name: barrana-accounting-crm
+    runtime: node
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: 20.11.0
+      - key: DATABASE_URL
+        fromDatabase:
+          name: barrana-crm-db
+          property: connectionString
+      - key: AUTH_SECRET
+        generateValue: true
+      - key: NEXTAUTH_URL
+        fromService:
+          type: web
+          name: barrana-accounting-crm
+          property: host
+      - key: STORAGE_PROVIDER
+        value: local
+      - key: LOCAL_STORAGE_PATH
+        value: /opt/render/project/src/uploads
+      - key: EMAIL_PROVIDER
+        value: log
+      - key: EMAIL_FROM
+        value: noreply@barranaaccounting.ai
+      - key: SIGNATURE_PROVIDER
+        value: mock
+      - key: MAX_FILE_SIZE_MB
+        value: "25"
+      - key: ALLOWED_MIME_TYPES
+        value: application/pdf,image/jpeg,image/png,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword,application/vnd.ms-excel

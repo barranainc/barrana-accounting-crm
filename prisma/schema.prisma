@@ -1,0 +1,535 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  SUPER_ADMIN
+  CPA_ADMIN
+  ASSISTANT
+  CLIENT_USER
+}
+
+enum UserStatus {
+  ACTIVE
+  INVITED
+  INACTIVE
+  SUSPENDED
+}
+
+enum ClientStatus {
+  ACTIVE
+  ONBOARDING
+  INACTIVE
+  ARCHIVED
+}
+
+enum ClientType {
+  CORPORATION
+  SOLE_PROPRIETOR
+  PARTNERSHIP
+  TRUST
+  NON_PROFIT
+  INDIVIDUAL
+}
+
+enum EngagementStatus {
+  DRAFT
+  ACTIVE
+  WAITING_ON_CLIENT
+  IN_REVIEW
+  COMPLETED
+  ON_HOLD
+  ARCHIVED
+}
+
+enum ServiceType {
+  BOOKKEEPING
+  TAX_RETURN
+  PAYROLL
+  CORPORATE_TAX
+  HST_GST_FILING
+  FINANCIAL_REPORTING
+  CFO_ADVISORY
+  VENTURE_ADVISORY
+}
+
+enum DocumentRequestStatus {
+  REQUESTED
+  UPLOADED
+  UNDER_REVIEW
+  ACCEPTED
+  REJECTED
+  NEEDS_REPLACEMENT
+  ARCHIVED
+}
+
+enum DocumentReviewStatus {
+  UNREVIEWED
+  UNDER_REVIEW
+  ACCEPTED
+  REJECTED
+  NEEDS_REPLACEMENT
+  ARCHIVED
+}
+
+enum DocumentVisibility {
+  INTERNAL
+  CLIENT_VISIBLE
+}
+
+enum MessageThreadStatus {
+  OPEN
+  WAITING_ON_STAFF
+  WAITING_ON_CLIENT
+  CLOSED
+}
+
+enum ThreadType {
+  CLIENT_STAFF
+  INTERNAL
+}
+
+enum NoticeStatus {
+  DRAFT
+  PUBLISHED
+  VIEWED
+  SUPERSEDED
+  ARCHIVED
+}
+
+enum NoticeType {
+  NOTICE_OF_ASSESSMENT
+  CRA_LETTER
+  ENGAGEMENT_LETTER
+  REPORT
+  MEMO
+  INVOICE
+  GENERAL
+}
+
+enum SignatureStatus {
+  DRAFT
+  SENT
+  VIEWED
+  SIGNED
+  EXPIRED
+  CANCELLED
+}
+
+enum TaskStatus {
+  TO_DO
+  IN_PROGRESS
+  WAITING_ON_CLIENT
+  DONE
+  CANCELLED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum ReminderChannel {
+  IN_APP
+  EMAIL
+  MANUAL
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MODELS
+// ─────────────────────────────────────────────────────────────────────────────
+
+model User {
+  id            String     @id @default(cuid())
+  name          String
+  email         String     @unique
+  emailVerified DateTime?
+  passwordHash  String?
+  role          UserRole   @default(CLIENT_USER)
+  status        UserStatus @default(ACTIVE)
+  avatarUrl     String?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  clientLinks         ClientUserLink[]
+  assignedEngagements Engagement[]    @relation("EngagementOwner")
+  assistedEngagements Engagement[]    @relation("EngagementAssistant")
+  uploadedDocuments   Document[]
+  documentRequests    DocumentRequest[]
+  documentComments    DocumentComment[]
+  messages            Message[]
+  publishedNotices    NoticeLetter[]
+  signatureRequests   SignatureRequest[]
+  assignedTasks       Task[]            @relation("TaskAssignee")
+  createdTasks        Task[]            @relation("TaskCreator")
+  reminderLogs        ReminderLog[]
+  auditEvents         AuditEvent[]
+  notifications       Notification[]
+}
+
+model Client {
+  id             String       @id @default(cuid())
+  businessName   String
+  legalName      String?
+  clientType     ClientType   @default(CORPORATION)
+  industry       String?
+  businessNumber String?
+  hstNumber      String?
+  primaryEmail   String
+  primaryPhone   String?
+  addressLine1   String?
+  addressLine2   String?
+  city           String?
+  province       String?
+  postalCode     String?
+  country        String       @default("Canada")
+  internalNotes  String?
+  flags          String[]     @default([])
+  status         ClientStatus @default(ONBOARDING)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  contacts          ClientContact[]
+  userLinks         ClientUserLink[]
+  engagements       Engagement[]
+  documentRequests  DocumentRequest[]
+  documents         Document[]
+  messageThreads    MessageThread[]
+  notices           NoticeLetter[]
+  signatureRequests SignatureRequest[]
+  tasks             Task[]
+  auditEvents       AuditEvent[]
+
+  @@index([status])
+  @@index([primaryEmail])
+}
+
+model ClientContact {
+  id               String   @id @default(cuid())
+  clientId         String
+  name             String
+  email            String
+  phone            String?
+  title            String?
+  portalAccess     Boolean  @default(false)
+  relationshipType String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId])
+}
+
+model ClientUserLink {
+  userId    String
+  clientId  String
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@id([userId, clientId])
+}
+
+model Engagement {
+  id                  String           @id @default(cuid())
+  clientId            String
+  serviceType         ServiceType
+  title               String
+  description         String?
+  reportingPeriodStart DateTime?
+  reportingPeriodEnd   DateTime?
+  taxYear             Int?
+  assignedOwnerId     String
+  assignedAssistantId String?
+  status              EngagementStatus @default(DRAFT)
+  notes               String?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  client            Client            @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  assignedOwner     User              @relation("EngagementOwner", fields: [assignedOwnerId], references: [id])
+  assignedAssistant User?             @relation("EngagementAssistant", fields: [assignedAssistantId], references: [id])
+  documentRequests  DocumentRequest[]
+  documents         Document[]
+  messageThreads    MessageThread[]
+  notices           NoticeLetter[]
+  signatureRequests SignatureRequest[]
+  tasks             Task[]
+  auditEvents       AuditEvent[]
+
+  @@index([clientId, status])
+}
+
+model DocumentRequest {
+  id            String                @id @default(cuid())
+  clientId      String
+  engagementId  String?
+  title         String
+  description   String?
+  requestedById String
+  dueDate       DateTime?
+  status        DocumentRequestStatus @default(REQUESTED)
+  priority      Priority              @default(MEDIUM)
+  category      String
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+
+  client      Client      @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  engagement  Engagement? @relation(fields: [engagementId], references: [id])
+  requestedBy User        @relation(fields: [requestedById], references: [id])
+  documents   Document[]
+  reminderLogs ReminderLog[]
+
+  @@index([clientId, status])
+  @@index([engagementId])
+}
+
+model Document {
+  id                   String               @id @default(cuid())
+  clientId             String
+  engagementId         String?
+  documentRequestId    String?
+  uploadedById         String
+  title                String
+  fileName             String
+  mimeType             String
+  fileSize             Int
+  storagePath          String
+  documentType         String
+  category             String
+  reportingPeriodStart DateTime?
+  reportingPeriodEnd   DateTime?
+  versionNumber        Int                  @default(1)
+  isCurrentVersion     Boolean              @default(true)
+  rootDocumentId       String?
+  replacesDocumentId   String?
+  reviewStatus         DocumentReviewStatus @default(UNREVIEWED)
+  visibility           DocumentVisibility   @default(INTERNAL)
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+
+  // AI/OCR readiness — placeholders only, no workflows in Phase 1
+  ocrText              String?
+  extractionStatus     String?
+  extractionConfidence Float?
+  extractedData        Json?
+
+  client           Client            @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  engagement       Engagement?       @relation(fields: [engagementId], references: [id])
+  documentRequest  DocumentRequest?  @relation(fields: [documentRequestId], references: [id])
+  uploadedBy       User              @relation(fields: [uploadedById], references: [id])
+  rootDocument     Document?         @relation("DocumentVersionChain", fields: [rootDocumentId], references: [id])
+  versions         Document[]        @relation("DocumentVersionChain")
+  replacesDocument Document?         @relation("DocumentReplaces", fields: [replacesDocumentId], references: [id])
+  replacedBy       Document[]        @relation("DocumentReplaces")
+  comments         DocumentComment[]
+  notices          NoticeLetter[]
+  signatureRequests SignatureRequest[]
+  messageAttachments MessageAttachment[]
+
+  @@index([clientId, isCurrentVersion])
+  @@index([documentRequestId])
+  @@index([engagementId])
+  @@index([visibility])
+}
+
+model DocumentComment {
+  id         String   @id @default(cuid())
+  documentId String
+  authorId   String
+  body       String
+  isInternal Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  author   User     @relation(fields: [authorId], references: [id])
+
+  @@index([documentId])
+}
+
+model MessageThread {
+  id           String              @id @default(cuid())
+  clientId     String
+  engagementId String?
+  subject      String?
+  threadType   ThreadType          @default(CLIENT_STAFF)
+  status       MessageThreadStatus @default(OPEN)
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  client     Client      @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  engagement Engagement? @relation(fields: [engagementId], references: [id])
+  messages   Message[]
+
+  @@index([clientId, threadType])
+  @@index([status])
+}
+
+model Message {
+  id         String   @id @default(cuid())
+  threadId   String
+  authorId   String
+  body       String
+  isInternal Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  thread      MessageThread       @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  author      User                @relation(fields: [authorId], references: [id])
+  attachments MessageAttachment[]
+
+  @@index([threadId])
+}
+
+model MessageAttachment {
+  id         String @id @default(cuid())
+  messageId  String
+  documentId String
+
+  message  Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  document Document @relation(fields: [documentId], references: [id])
+}
+
+model NoticeLetter {
+  id              String       @id @default(cuid())
+  clientId        String
+  engagementId    String?
+  title           String
+  description     String?
+  noticeType      NoticeType   @default(GENERAL)
+  documentId      String
+  publishedById   String
+  status          NoticeStatus @default(DRAFT)
+  publishedAt     DateTime?
+  clientViewedAt  DateTime?
+  emailNotifiedAt DateTime?
+  supersededById  String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  client       Client         @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  engagement   Engagement?    @relation(fields: [engagementId], references: [id])
+  document     Document       @relation(fields: [documentId], references: [id])
+  publishedBy  User           @relation(fields: [publishedById], references: [id])
+  supersededBy NoticeLetter?  @relation("NoticeSupersedes", fields: [supersededById], references: [id])
+  supersedes   NoticeLetter[] @relation("NoticeSupersedes")
+
+  @@index([clientId, status])
+}
+
+model SignatureRequest {
+  id                 String          @id @default(cuid())
+  clientId           String
+  engagementId       String?
+  documentId         String
+  requestedById      String
+  title              String
+  message            String?
+  provider           String          @default("mock")
+  providerEnvelopeId String?
+  status             SignatureStatus @default(DRAFT)
+  sentAt             DateTime?
+  viewedAt           DateTime?
+  signedAt           DateTime?
+  expiresAt          DateTime?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  client      Client      @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  engagement  Engagement? @relation(fields: [engagementId], references: [id])
+  document    Document    @relation(fields: [documentId], references: [id])
+  requestedBy User        @relation(fields: [requestedById], references: [id])
+
+  @@index([clientId, status])
+  @@index([documentId])
+}
+
+model Task {
+  id            String     @id @default(cuid())
+  clientId      String?
+  engagementId  String?
+  assignedToId  String?
+  createdById   String
+  title         String
+  description   String?
+  dueDate       DateTime?
+  status        TaskStatus @default(TO_DO)
+  priority      Priority   @default(MEDIUM)
+  clientVisible Boolean    @default(false)
+  completedAt   DateTime?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  client      Client?      @relation(fields: [clientId], references: [id])
+  engagement  Engagement?  @relation(fields: [engagementId], references: [id])
+  assignedTo  User?        @relation("TaskAssignee", fields: [assignedToId], references: [id])
+  createdBy   User         @relation("TaskCreator", fields: [createdById], references: [id])
+  reminderLogs ReminderLog[]
+
+  @@index([clientId, status])
+  @@index([assignedToId])
+  @@index([dueDate])
+}
+
+model ReminderLog {
+  id                String          @id @default(cuid())
+  taskId            String?
+  documentRequestId String?
+  sentById          String?
+  channel           ReminderChannel @default(IN_APP)
+  note              String?
+  createdAt         DateTime        @default(now())
+
+  task            Task?            @relation(fields: [taskId], references: [id])
+  documentRequest DocumentRequest? @relation(fields: [documentRequestId], references: [id])
+  sentBy          User?            @relation(fields: [sentById], references: [id])
+}
+
+model AuditEvent {
+  id           String   @id @default(cuid())
+  actorUserId  String?
+  clientId     String?
+  engagementId String?
+  entityType   String
+  entityId     String
+  action       String
+  metadata     Json     @default("{}")
+  createdAt    DateTime @default(now())
+
+  actor      User?       @relation(fields: [actorUserId], references: [id])
+  client     Client?     @relation(fields: [clientId], references: [id])
+  engagement Engagement? @relation(fields: [engagementId], references: [id])
+
+  @@index([entityType, entityId])
+  @@index([clientId])
+  @@index([actorUserId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  title     String
+  body      String
+  link      String?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+}

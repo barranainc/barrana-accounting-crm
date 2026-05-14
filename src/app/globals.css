@@ -1,0 +1,120 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* ── Barrana brand ───────────────────────── */
+    --brand-navy:        #283891;
+    --brand-navy-dark:   #1e2b6f;
+    --brand-navy-light:  #3a4da8;
+    --brand-plum:        #7E0F4A;
+    --brand-plum-dark:   #5e0b37;
+    --brand-plum-light:  #9e1460;
+    --brand-grey:        #7B7B7B;
+    --brand-grey-light:  #f4f4f5;
+    --brand-grey-border: #e4e4e7;
+
+    /* ── shadcn semantic tokens ──────────────── */
+    --background:              0 0% 98%;
+    --foreground:              224 45% 15%;
+
+    --card:                    0 0% 100%;
+    --card-foreground:         224 45% 15%;
+
+    --popover:                 0 0% 100%;
+    --popover-foreground:      224 45% 15%;
+
+    /* Navy as primary */
+    --primary:                 228 55% 36%;
+    --primary-foreground:      0 0% 100%;
+
+    --secondary:               220 14% 96%;
+    --secondary-foreground:    228 55% 36%;
+
+    --muted:                   220 14% 96%;
+    --muted-foreground:        220 9% 46%;
+
+    /* Plum as accent */
+    --accent:                  331 78% 27%;
+    --accent-foreground:       0 0% 100%;
+
+    --destructive:             0 72% 51%;
+    --destructive-foreground:  0 0% 100%;
+
+    --border:                  220 13% 91%;
+    --input:                   220 13% 91%;
+    --ring:                    228 55% 36%;
+
+    --radius: 0.5rem;
+
+    /* Sidebar — navy dark */
+    --sidebar-background:            228 58% 25%;
+    --sidebar-foreground:            220 30% 90%;
+    --sidebar-primary:               0 0% 100%;
+    --sidebar-primary-foreground:    228 58% 25%;
+    --sidebar-accent:                228 55% 35%;
+    --sidebar-accent-foreground:     0 0% 100%;
+    --sidebar-border:                228 45% 30%;
+    --sidebar-ring:                  228 55% 60%;
+
+    --chart-1: 228 55% 36%;
+    --chart-2: 331 78% 27%;
+    --chart-3: 220 9% 46%;
+    --chart-4: 142 71% 45%;
+    --chart-5: 38 92% 50%;
+
+    --font-sans: "Inter", "system-ui", "sans-serif";
+  }
+
+  /* No dark mode in Phase 1 — keeping clean single-mode */
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight;
+  }
+}
+
+/* ── Status badge colour system ──────────────────────────────── */
+@layer components {
+  .badge-active          { @apply bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200; }
+  .badge-onboarding      { @apply bg-blue-50 text-blue-700 ring-1 ring-blue-200; }
+  .badge-inactive        { @apply bg-zinc-100 text-zinc-600 ring-1 ring-zinc-200; }
+  .badge-archived        { @apply bg-zinc-50 text-zinc-400 ring-1 ring-zinc-200; }
+
+  .badge-draft           { @apply bg-zinc-100 text-zinc-600 ring-1 ring-zinc-200; }
+  .badge-waiting-client  { @apply bg-amber-50 text-amber-700 ring-1 ring-amber-200; }
+  .badge-in-review       { @apply bg-violet-50 text-violet-700 ring-1 ring-violet-200; }
+  .badge-completed       { @apply bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200; }
+  .badge-on-hold         { @apply bg-orange-50 text-orange-700 ring-1 ring-orange-200; }
+  .badge-rejected        { @apply bg-red-50 text-red-700 ring-1 ring-red-200; }
+  .badge-accepted        { @apply bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200; }
+  .badge-requested       { @apply bg-blue-50 text-blue-700 ring-1 ring-blue-200; }
+  .badge-uploaded        { @apply bg-violet-50 text-violet-700 ring-1 ring-violet-200; }
+  .badge-needs-replace   { @apply bg-orange-50 text-orange-700 ring-1 ring-orange-200; }
+  .badge-published       { @apply bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200; }
+  .badge-viewed          { @apply bg-blue-50 text-blue-700 ring-1 ring-blue-200; }
+  .badge-signed          { @apply bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200; }
+  .badge-sent            { @apply bg-blue-50 text-blue-700 ring-1 ring-blue-200; }
+  .badge-expired         { @apply bg-zinc-100 text-zinc-500 ring-1 ring-zinc-200; }
+  .badge-cancelled       { @apply bg-red-50 text-red-600 ring-1 ring-red-200; }
+
+  .badge-priority-low    { @apply bg-zinc-100 text-zinc-600 ring-1 ring-zinc-200; }
+  .badge-priority-medium { @apply bg-blue-50 text-blue-700 ring-1 ring-blue-200; }
+  .badge-priority-high   { @apply bg-orange-50 text-orange-700 ring-1 ring-orange-200; }
+  .badge-priority-urgent { @apply bg-red-50 text-red-700 ring-1 ring-red-200; }
+
+  .badge-overdue         { @apply bg-red-50 text-red-700 ring-1 ring-red-200; }
+  .badge-internal        { @apply bg-violet-50 text-violet-700 ring-1 ring-violet-200; }
+  .badge-client-visible  { @apply bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200; }
+}
