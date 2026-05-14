@@ -56,7 +56,7 @@ export default async function RequestsPage({
         </select>
         <button type="submit" className="h-9 rounded-md bg-brand-navy px-4 text-sm font-medium text-white hover:bg-brand-navyDark">Filter</button>
         {(status || priority) && (
-          <a href="/documents/requests" className="h-9 flex items-center rounded-md border border-brand-greyBorder px-4 text-sm text-muted-foreground hover:bg-brand-greyLight">Clear</a>
+          <Link href="/documents/requests" className="h-9 flex items-center rounded-md border border-brand-greyBorder px-4 text-sm text-muted-foreground hover:bg-brand-greyLight">Clear</Link>
         )}
       </form>
 
