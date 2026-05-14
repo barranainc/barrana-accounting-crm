@@ -2,8 +2,12 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 
 export default async function RootPage() {
-  const session = await auth();
-  if (!session) redirect("/login");
-  if (session.user.role === "CLIENT_USER") redirect("/portal/dashboard");
-  redirect("/dashboard");
+  try {
+    const session = await auth();
+    if (!session) redirect("/login");
+    if (session.user.role === "CLIENT_USER") redirect("/portal/dashboard");
+    redirect("/dashboard");
+  } catch {
+    redirect("/login");
+  }
 }
