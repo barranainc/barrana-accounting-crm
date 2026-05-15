@@ -31,7 +31,11 @@ export async function requireAuth(): Promise<Session> {
 
 export async function requireStaff(): Promise<Session> {
   const session = await requireAuth();
-  if (!isStaff(session.user.role)) redirect("/unauthorised");
+  if (!isStaff(session.user.role)) {
+    // Client users get redirected to their portal instead of a 403 page
+    if (isClientUser(session.user.role)) redirect("/portal/dashboard");
+    redirect("/unauthorised");
+  }
   return session;
 }
 
@@ -49,7 +53,11 @@ export async function requireSuperAdmin(): Promise<Session> {
 
 export async function requireClientUser(): Promise<Session> {
   const session = await requireAuth();
-  if (!isClientUser(session.user.role)) redirect("/unauthorised");
+  if (!isClientUser(session.user.role)) {
+    // Staff users get redirected to their dashboard instead of a 403 page
+    if (isStaff(session.user.role)) redirect("/dashboard");
+    redirect("/unauthorised");
+  }
   return session;
 }
 
