@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -19,9 +19,10 @@ const loginSchema = z.object({
 type LoginForm = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
-  const router = useRouter();
+
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [statusMsg, setStatusMsg] = useState("");
 
   const { register, handleSubmit, formState: { errors } } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
@@ -30,22 +31,38 @@ export default function LoginPage() {
   async function onSubmit(data: LoginForm) {
     setLoading(true);
     setError(null);
+    setStatusMsg("Connecting to server...");
 
-    const result = await signIn("credentials", {
-      email: data.email,
-      password: data.password,
-      redirect: false,
-    });
+    try {
+      // Show warm-up message after 3 seconds (free tier cold start)
+      const slowTimer = setTimeout(() => {
+        setStatusMsg("Server is waking up, this may take up to 30 seconds...");
+      }, 3000);
 
-    if (result?.error) {
-      setError("Invalid email or password. Please try again.");
+      const result = await signIn("credentials", {
+        email: data.email,
+        password: data.password,
+        redirect: false,
+      });
+
+      clearTimeout(slowTimer);
+
+      if (result?.error) {
+        setError("Invalid email or password. Please try again.");
+        setLoading(false);
+        setStatusMsg("");
+        return;
+      }
+
+      setStatusMsg("Login successful! Redirecting...");
+
+      // Use window.location for reliable redirect (avoids Next.js router issues)
+      window.location.href = "/dashboard";
+    } catch {
+      setError("Connection timed out. Please try again — the server may be starting up.");
       setLoading(false);
-      return;
+      setStatusMsg("");
     }
-
-    // Redirect based on role — middleware will enforce the final destination
-    router.push("/");
-    router.refresh();
   }
 
   return (
@@ -100,6 +117,10 @@ export default function LoginPage() {
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? <><Loader2 className="h-4 w-4 animate-spin" /> Signing in…</> : "Sign in"}
           </Button>
+
+          {statusMsg && (
+            <p className="text-center text-xs text-muted-foreground animate-pulse">{statusMsg}</p>
+          )}
         </form>
       </div>
 
