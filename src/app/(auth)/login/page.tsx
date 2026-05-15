@@ -71,8 +71,8 @@ export default function LoginPage() {
         }
 
         setStatusMsg("Login successful! Redirecting...");
-        // Use window.location for reliable redirect
-        window.location.href = "/dashboard";
+        // Use window.location for reliable redirect — "/" handles role-based routing
+        window.location.href = "/";
         return;
       } catch {
         if (attempt < maxRetries) {
