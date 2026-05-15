@@ -1,6 +1,6 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import { db } from "@/lib/db";
+import { db, withRetry } from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import type { UserRole } from "@prisma/client";
@@ -24,7 +24,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!parsed.success) return null;
 
         const { email, password } = parsed.data;
-        const user = await db.user.findUnique({ where: { email } });
+        // withRetry handles DB cold-start failures on Render free tier
+        const user = await withRetry(() => db.user.findUnique({ where: { email } }));
         if (!user || !user.passwordHash) return null;
         if (user.status !== "ACTIVE") return null;
 

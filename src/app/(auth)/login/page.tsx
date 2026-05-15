@@ -33,35 +33,57 @@ export default function LoginPage() {
     setError(null);
     setStatusMsg("Connecting to server...");
 
-    try {
-      // Show warm-up message after 3 seconds (free tier cold start)
-      const slowTimer = setTimeout(() => {
-        setStatusMsg("Server is waking up, this may take up to 30 seconds...");
-      }, 3000);
+    const maxRetries = 3;
 
-      const result = await signIn("credentials", {
-        email: data.email,
-        password: data.password,
-        redirect: false,
-      });
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        // Show warm-up message after 3 seconds (free tier cold start)
+        const slowTimer = setTimeout(() => {
+          setStatusMsg("Server is waking up, this may take up to 30 seconds...");
+        }, 3000);
 
-      clearTimeout(slowTimer);
+        const result = await signIn("credentials", {
+          email: data.email,
+          password: data.password,
+          redirect: false,
+        });
 
-      if (result?.error) {
-        setError("Invalid email or password. Please try again.");
+        clearTimeout(slowTimer);
+
+        if (result?.error) {
+          // Actual auth failure — wrong credentials
+          if (result.error === "CredentialsSignin") {
+            setError("Invalid email or password. Please try again.");
+            setLoading(false);
+            setStatusMsg("");
+            return;
+          }
+          // Server error — retry
+          if (attempt < maxRetries) {
+            setStatusMsg(`Connection issue, retrying (${attempt}/${maxRetries})...`);
+            await new Promise((r) => setTimeout(r, 2000));
+            continue;
+          }
+          setError("Unable to sign in. Please refresh the page and try again.");
+          setLoading(false);
+          setStatusMsg("");
+          return;
+        }
+
+        setStatusMsg("Login successful! Redirecting...");
+        // Use window.location for reliable redirect
+        window.location.href = "/dashboard";
+        return;
+      } catch {
+        if (attempt < maxRetries) {
+          setStatusMsg(`Connection timed out, retrying (${attempt}/${maxRetries})...`);
+          await new Promise((r) => setTimeout(r, 2000));
+          continue;
+        }
+        setError("Connection failed after multiple attempts. Please refresh and try again.");
         setLoading(false);
         setStatusMsg("");
-        return;
       }
-
-      setStatusMsg("Login successful! Redirecting...");
-
-      // Use window.location for reliable redirect (avoids Next.js router issues)
-      window.location.href = "/dashboard";
-    } catch {
-      setError("Connection timed out. Please try again — the server may be starting up.");
-      setLoading(false);
-      setStatusMsg("");
     }
   }
 
