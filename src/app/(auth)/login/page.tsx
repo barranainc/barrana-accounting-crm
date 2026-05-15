@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { signIn } from "next-auth/react";
+import { signIn, getSession } from "next-auth/react";
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -71,8 +71,21 @@ export default function LoginPage() {
         }
 
         setStatusMsg("Login successful! Redirecting...");
-        // Use window.location for reliable redirect — "/" handles role-based routing
-        window.location.href = "/";
+
+        // Fetch session to get user role, then redirect to correct dashboard
+        // This avoids middleware redirect chains that can cause 403 errors
+        try {
+          const session = await getSession();
+          const role = session?.user?.role;
+          if (role === "CLIENT_USER") {
+            window.location.href = "/portal/dashboard";
+          } else {
+            window.location.href = "/dashboard";
+          }
+        } catch {
+          // Fallback: let root page / middleware handle routing
+          window.location.href = "/";
+        }
         return;
       } catch {
         if (attempt < maxRetries) {
