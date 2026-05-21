@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { formatDate, fileSizeLabel, fileUrl } from "@/lib/utils";
-import { FileText, Download } from "lucide-react";
+import { FileText, Download, Eye } from "lucide-react";
 
 export const metadata = { title: "My Documents" };
 
@@ -92,7 +92,7 @@ export default async function PortalDocumentsPage({
                 <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground hidden lg:table-cell">Category</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">Status</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground hidden sm:table-cell">Added</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground">Download</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-brand-greyBorder">
@@ -115,13 +115,24 @@ export default async function PortalDocumentsPage({
                     {formatDate(doc.createdAt)}
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <a
-                      href={fileUrl(doc.id, true)}
-                      className="text-muted-foreground hover:text-brand-navy"
-                      title="Download"
-                    >
-                      <Download className="h-4 w-4 inline" />
-                    </a>
+                    <div className="flex items-center justify-end gap-3">
+                      <a
+                        href={fileUrl(doc.id)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-muted-foreground hover:text-brand-navy"
+                        title="View"
+                      >
+                        <Eye className="h-4 w-4 inline" />
+                      </a>
+                      <a
+                        href={fileUrl(doc.id, true)}
+                        className="text-muted-foreground hover:text-brand-navy"
+                        title="Download"
+                      >
+                        <Download className="h-4 w-4 inline" />
+                      </a>
+                    </div>
                   </td>
                 </tr>
               ))}

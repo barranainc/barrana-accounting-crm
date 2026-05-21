@@ -5,7 +5,8 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { formatDate, fileUrl } from "@/lib/utils";
-import { Bell, Download } from "lucide-react";
+import { Bell, Download, Eye } from "lucide-react";
+import Link from "next/link";
 
 export const metadata = { title: "Notices & Letters" };
 
@@ -75,7 +76,7 @@ export default async function PortalNoticesPage({
           </select>
           <button type="submit" className="h-9 rounded-md bg-brand-navy px-4 text-sm font-medium text-white hover:bg-brand-navyDark">Filter</button>
           {noticeType && (
-            <a href="/portal/notices" className="h-9 flex items-center rounded-md border border-brand-greyBorder px-4 text-sm text-muted-foreground hover:bg-brand-greyLight">Clear</a>
+            <Link href="/portal/notices" className="h-9 flex items-center rounded-md border border-brand-greyBorder px-4 text-sm text-muted-foreground hover:bg-brand-greyLight">Clear</Link>
           )}
         </form>
       )}
@@ -92,17 +93,19 @@ export default async function PortalNoticesPage({
                 <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground hidden lg:table-cell">Engagement</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground hidden sm:table-cell">Date</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">Status</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground">File</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-brand-greyBorder">
               {notices.map((notice) => (
-                <tr key={notice.id} className="hover:bg-brand-greyLight/50">
+                <tr key={notice.id} className="hover:bg-brand-greyLight/50 cursor-pointer">
                   <td className="px-4 py-3">
-                    <p className="font-medium text-foreground">{notice.title}</p>
-                    {notice.description && (
-                      <p className="text-xs text-muted-foreground mt-0.5 truncate max-w-xs">{notice.description}</p>
-                    )}
+                    <Link href={`/portal/notices/${notice.id}`} className="block">
+                      <p className="font-medium text-foreground hover:text-brand-navy">{notice.title}</p>
+                      {notice.description && (
+                        <p className="text-xs text-muted-foreground mt-0.5 truncate max-w-xs">{notice.description}</p>
+                      )}
+                    </Link>
                   </td>
                   <td className="px-4 py-3 text-muted-foreground hidden md:table-cell text-xs">
                     {NOTICE_TYPE_LABELS[notice.noticeType] ?? notice.noticeType}
@@ -117,13 +120,22 @@ export default async function PortalNoticesPage({
                     <StatusBadge status={notice.clientViewedAt ? "VIEWED" : "PUBLISHED"} />
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <a
-                      href={fileUrl(notice.document.id, true)}
-                      className="text-muted-foreground hover:text-brand-navy"
-                      title="Download"
-                    >
-                      <Download className="h-4 w-4 inline" />
-                    </a>
+                    <div className="flex items-center justify-end gap-3">
+                      <Link
+                        href={`/portal/notices/${notice.id}`}
+                        className="text-muted-foreground hover:text-brand-navy"
+                        title="Open notice"
+                      >
+                        <Eye className="h-4 w-4 inline" />
+                      </Link>
+                      <a
+                        href={fileUrl(notice.document.id, true)}
+                        className="text-muted-foreground hover:text-brand-navy"
+                        title="Download"
+                      >
+                        <Download className="h-4 w-4 inline" />
+                      </a>
+                    </div>
                   </td>
                 </tr>
               ))}

@@ -93,10 +93,12 @@ export default async function ClientsPage({
               <tr className="border-b border-brand-greyBorder bg-brand-greyLight">
                 <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">Client</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground hidden md:table-cell">Type</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground hidden xl:table-cell">Industry</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground hidden lg:table-cell">Province</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground hidden lg:table-cell">Email</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">Status</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground hidden sm:table-cell">Engagements</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground hidden lg:table-cell">Added</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground hidden xl:table-cell">Added</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-brand-greyBorder">
@@ -119,10 +121,12 @@ export default async function ClientsPage({
                   <td className="px-4 py-3 text-muted-foreground hidden md:table-cell capitalize">
                     {client.clientType.replace(/_/g, " ").toLowerCase()}
                   </td>
+                  <td className="px-4 py-3 text-muted-foreground hidden xl:table-cell text-xs">{client.industry ?? "—"}</td>
+                  <td className="px-4 py-3 text-muted-foreground hidden lg:table-cell text-xs">{client.province ?? "—"}</td>
                   <td className="px-4 py-3 text-muted-foreground hidden lg:table-cell">{client.primaryEmail}</td>
                   <td className="px-4 py-3"><StatusBadge status={client.status} /></td>
                   <td className="px-4 py-3 text-muted-foreground hidden sm:table-cell">{client._count.engagements}</td>
-                  <td className="px-4 py-3 text-muted-foreground hidden lg:table-cell">{formatDate(client.createdAt)}</td>
+                  <td className="px-4 py-3 text-muted-foreground hidden xl:table-cell">{formatDate(client.createdAt)}</td>
                 </tr>
               ))}
             </tbody>

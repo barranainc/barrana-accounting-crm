@@ -4,6 +4,7 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { timeAgo } from "@/lib/utils";
 import { MessageSquare } from "lucide-react";
+import Link from "next/link";
 
 interface ClientMessagesTabProps {
   clientId: string;
@@ -39,7 +40,11 @@ export async function ClientMessagesTab({ clientId }: ClientMessagesTabProps) {
             const lastMessage = thread.messages[0];
             const isInternal = thread.threadType === "INTERNAL";
             return (
-              <div key={thread.id} className="py-4 first:pt-0 last:pb-0">
+              <Link
+                key={thread.id}
+                href={`/messages/${thread.id}`}
+                className="block py-4 first:pt-0 last:pb-0 hover:bg-brand-greyLight/50 -mx-4 px-4 rounded-md transition-colors"
+              >
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
@@ -71,7 +76,7 @@ export async function ClientMessagesTab({ clientId }: ClientMessagesTabProps) {
                     <span className="text-xs text-muted-foreground">{timeAgo(thread.updatedAt)}</span>
                   </div>
                 </div>
-              </div>
+              </Link>
             );
           })}
         </div>

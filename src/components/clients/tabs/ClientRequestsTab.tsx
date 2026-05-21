@@ -41,7 +41,7 @@ export async function ClientRequestsTab({ clientId }: ClientRequestsTabProps) {
                 <th className="pb-3 text-left text-xs font-semibold text-muted-foreground hidden sm:table-cell">Category</th>
                 <th className="pb-3 text-left text-xs font-semibold text-muted-foreground">Status</th>
                 <th className="pb-3 text-left text-xs font-semibold text-muted-foreground hidden md:table-cell">Priority</th>
-                <th className="pb-3 text-left text-xs font-semibold text-muted-foreground hidden lg:table-cell">Due</th>
+                <th className="pb-3 text-left text-xs font-semibold text-muted-foreground hidden lg:table-cell">Due date</th>
                 <th className="pb-3 text-left text-xs font-semibold text-muted-foreground hidden xl:table-cell">Engagement</th>
                 <th className="pb-3 text-left text-xs font-semibold text-muted-foreground hidden xl:table-cell">Docs</th>
               </tr>

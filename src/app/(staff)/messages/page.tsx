@@ -54,7 +54,7 @@ export default async function MessagesPage({
         </select>
         <button type="submit" className="h-9 rounded-md bg-brand-navy px-4 text-sm font-medium text-white hover:bg-brand-navyDark">Filter</button>
         {(status || threadType) && (
-          <a href="/messages" className="h-9 flex items-center rounded-md border border-brand-greyBorder px-4 text-sm text-muted-foreground hover:bg-brand-greyLight">Clear</a>
+          <Link href="/messages" className="h-9 flex items-center rounded-md border border-brand-greyBorder px-4 text-sm text-muted-foreground hover:bg-brand-greyLight">Clear</Link>
         )}
       </form>
 
@@ -66,7 +66,7 @@ export default async function MessagesPage({
             const last = thread.messages[0];
             const isInternal = thread.threadType === "INTERNAL";
             return (
-              <div key={thread.id} className="px-5 py-4 hover:bg-brand-greyLight/40 transition-colors">
+              <Link key={thread.id} href={`/messages/${thread.id}`} className="block px-5 py-4 hover:bg-brand-greyLight/40 transition-colors">
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap mb-1">
@@ -97,7 +97,7 @@ export default async function MessagesPage({
                     <span className="text-xs text-muted-foreground">{timeAgo(thread.updatedAt)}</span>
                   </div>
                 </div>
-              </div>
+              </Link>
             );
           })}
         </div>

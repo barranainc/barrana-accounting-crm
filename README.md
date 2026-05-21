@@ -119,7 +119,7 @@ You should see all `✓` lines and the demo credentials printed at the end.
 1. **New** → **Web Service** → connect your GitHub repo
 2. Configure:
    - **Runtime:** Node
-   - **Build command:** `npm install && npm run build`
+   - **Build command:** `npm install && npm run build && npm run db:seed`
    - **Start command:** `npm start`
    - **Node version:** 20
 

@@ -275,7 +275,7 @@ async function main() {
 
   const req1 = await db.documentRequest.upsert({
     where: { id: "seed-req-1" },
-    update: {},
+    update: { status: "REQUESTED" },
     create: {
       id: "seed-req-1",
       clientId: techflow.id,
@@ -497,7 +497,7 @@ async function main() {
   // Draft notice for demo — staff can publish this during the demo (flow e)
   await db.noticeLetter.upsert({
     where: { id: "seed-notice-3" },
-    update: {},
+    update: { status: "DRAFT", publishedAt: null, clientViewedAt: null },
     create: {
       id: "seed-notice-3",
       clientId: techflow.id,
@@ -538,7 +538,7 @@ async function main() {
 
   await db.signatureRequest.upsert({
     where: { id: "seed-sig-2" },
-    update: {},
+    update: { status: "SENT", viewedAt: null, signedAt: null },
     create: {
       id: "seed-sig-2",
       clientId: techflow.id,
