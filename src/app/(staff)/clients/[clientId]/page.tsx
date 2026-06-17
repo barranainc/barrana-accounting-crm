@@ -81,7 +81,7 @@ export default async function ClientDetailPage({
                 <span className="text-xs text-muted-foreground capitalize">
                   {client.clientType.replace(/_/g, " ").toLowerCase()}
                 </span>
-                {client.flags.map((flag) => (
+                {(client.flags as string[]).map((flag) => (
                   <span key={flag} className="rounded-full bg-brand-plum/10 px-2 py-0.5 text-xs text-brand-plum capitalize">
                     {flag.replace(/_/g, " ")}
                   </span>

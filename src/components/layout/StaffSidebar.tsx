@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard, Users, FileText, MessageSquare,
-  Bell, PenLine, CheckSquare, ShieldCheck, Settings, LogOut, FolderOpen,
+  Bell, PenLine, CheckSquare, ShieldCheck, Settings, LogOut, FolderOpen, Landmark,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import type { UserRole } from "@prisma/client";
@@ -15,6 +15,7 @@ const navItems = [
   { href: "/clients",           label: "Clients",           icon: Users },
   { href: "/documents",         label: "Documents",         icon: FileText },
   { href: "/documents/requests",label: "Requests",          icon: FolderOpen },
+  { href: "/statements",        label: "Bank Imports",      icon: Landmark },
   { href: "/messages",          label: "Messages",          icon: MessageSquare },
   { href: "/notices",           label: "Notices",           icon: Bell },
   { href: "/signatures",        label: "Signatures",        icon: PenLine },

@@ -108,9 +108,9 @@ export default async function ClientsPage({
                     <Link href={`/clients/${client.id}`} className="font-medium text-foreground hover:text-brand-navy">
                       {client.businessName}
                     </Link>
-                    {client.flags.length > 0 && (
+                    {(client.flags as string[]).length > 0 && (
                       <div className="flex gap-1 mt-1">
-                        {client.flags.map((flag) => (
+                        {(client.flags as string[]).map((flag) => (
                           <span key={flag} className="rounded-full bg-brand-plum/10 px-2 py-0 text-xs text-brand-plum capitalize">
                             {flag.replace(/_/g, " ")}
                           </span>

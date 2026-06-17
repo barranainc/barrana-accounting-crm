@@ -50,3 +50,11 @@ export const ALLOWED_MIME_TYPES = (
 ).split(",");
 
 export const MAX_FILE_BYTES = (parseInt(process.env.MAX_FILE_SIZE_MB ?? "25", 10)) * 1024 * 1024;
+
+export function formatMoney(amount: number, currency = "CAD"): string {
+  try {
+    return new Intl.NumberFormat("en-CA", { style: "currency", currency }).format(amount);
+  } catch {
+    return `$${amount.toFixed(2)}`;
+  }
+}

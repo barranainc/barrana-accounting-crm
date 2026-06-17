@@ -7,9 +7,9 @@ databases:
 services:
   - type: web
     plan: free
-    name: barrana-accounting-crm
+    name: barrana-crm-app
     runtime: node
-    buildCommand: npm install && npm run build
+    buildCommand: npm install && npm run build && npx prisma db push
     startCommand: npx next start -H 0.0.0.0 -p $PORT
     healthCheckPath: /api/health
     envVars:
@@ -22,10 +22,7 @@ services:
       - key: AUTH_SECRET
         generateValue: true
       - key: NEXTAUTH_URL
-        fromService:
-          type: web
-          name: barrana-accounting-crm
-          property: host
+        value: https://barrana-crm-app.onrender.com
       - key: STORAGE_PROVIDER
         value: local
       - key: LOCAL_STORAGE_PATH
@@ -40,3 +37,10 @@ services:
         value: "25"
       - key: ALLOWED_MIME_TYPES
         value: application/pdf,image/jpeg,image/png,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword,application/vnd.ms-excel
+      - key: EXTRACTION_PROVIDER
+        value: claude
+      - key: EXTRACTION_MODEL
+        value: claude-opus-4-8
+      # Secret — set the value in the Render dashboard (Environment tab), never commit it.
+      - key: ANTHROPIC_API_KEY
+        sync: false

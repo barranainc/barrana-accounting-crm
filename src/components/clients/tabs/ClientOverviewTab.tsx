@@ -57,10 +57,10 @@ export function ClientOverviewTab({ client }: ClientOverviewTabProps) {
       )}
 
       {/* Client flags */}
-      {client.flags.length > 0 && (
+      {(client.flags as string[]).length > 0 && (
         <SectionCard title="Client Flags" className="lg:col-span-2">
           <div className="flex flex-wrap gap-2">
-            {client.flags.map((flag) => (
+            {(client.flags as string[]).map((flag) => (
               <span
                 key={flag}
                 className="rounded-full bg-brand-plum/10 px-3 py-1 text-xs font-medium text-brand-plum capitalize"

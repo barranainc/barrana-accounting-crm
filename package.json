@@ -16,6 +16,7 @@
     "db:reset": "prisma migrate reset --force && tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.104.2",
     "@auth/prisma-adapter": "^2.7.4",
     "@hookform/resolvers": "^3.9.1",
     "@prisma/client": "^6.1.0",

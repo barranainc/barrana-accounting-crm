@@ -146,6 +146,24 @@ enum ReminderChannel {
   MANUAL
 }
 
+enum StatementKind {
+  BANK
+  CREDIT_CARD
+}
+
+enum StatementStatus {
+  PENDING      // uploaded, not yet processed
+  PROCESSING   // extraction in flight
+  EXTRACTED    // OCR done, awaiting staff review
+  REVIEWED     // staff confirmed — safe to export
+  FAILED       // extraction error (see errorMessage)
+}
+
+enum TxnDirection {
+  DEBIT   // money out of the account (withdrawal / purchase / charge)
+  CREDIT  // money into the account (deposit / payment / refund)
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // MODELS
 // ─────────────────────────────────────────────────────────────────────────────
@@ -176,6 +194,7 @@ model User {
   reminderLogs        ReminderLog[]
   auditEvents         AuditEvent[]
   notifications       Notification[]
+  bankStatements      BankStatement[]
 }
 
 model Client {
@@ -195,7 +214,7 @@ model Client {
   postalCode     String?
   country        String       @default("Canada")
   internalNotes  String?
-  flags          String[]     @default([])
+  flags          Json         @default("[]")
   status         ClientStatus @default(ONBOARDING)
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
@@ -210,6 +229,7 @@ model Client {
   signatureRequests SignatureRequest[]
   tasks             Task[]
   auditEvents       AuditEvent[]
+  bankStatements    BankStatement[]
 
   @@index([status])
   @@index([primaryEmail])
@@ -339,6 +359,7 @@ model Document {
   notices          NoticeLetter[]
   signatureRequests SignatureRequest[]
   messageAttachments MessageAttachment[]
+  bankStatement     BankStatement?
 
   @@index([clientId, isCurrentVersion])
   @@index([documentRequestId])
@@ -532,4 +553,63 @@ model Notification {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, readAt])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BANK / CREDIT-CARD STATEMENT OCR → QUICKBOOKS EXPORT
+// ─────────────────────────────────────────────────────────────────────────────
+
+// A statement is anchored to an uploaded Document (the source PDF). Extraction
+// populates the header fields + transactions; staff review/correct before export.
+model BankStatement {
+  id                  String          @id @default(cuid())
+  clientId            String
+  documentId          String          @unique // the source PDF Document
+  uploadedById        String
+
+  kind                StatementKind   @default(BANK)
+  institution         String?         // e.g. "TD Canada Trust"
+  accountName         String?         // e.g. "Business Chequing"
+  accountNumberMasked String?         // masked / last-4 only — never store full PAN
+  currency            String          @default("CAD")
+  periodStart         DateTime?
+  periodEnd           DateTime?
+  openingBalance      Decimal?        @db.Decimal(14, 2)
+  closingBalance      Decimal?        @db.Decimal(14, 2)
+
+  status              StatementStatus @default(PENDING)
+  extractionModel     String?         // provider/model used, e.g. "claude-sonnet-4-6"
+  confidence          Float?          // 0..1 self-reported extraction confidence
+  rawText             String?         @db.Text
+  errorMessage        String?         @db.Text
+
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+
+  client       Client                 @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  document     Document               @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  uploadedBy   User                   @relation(fields: [uploadedById], references: [id])
+  transactions StatementTransaction[]
+
+  @@index([clientId, status])
+}
+
+model StatementTransaction {
+  id          String       @id @default(cuid())
+  statementId String
+  postedDate  DateTime
+  description String       @db.Text
+  amount      Decimal      @db.Decimal(14, 2) // always positive; direction carries the sign
+  direction   TxnDirection
+  balance     Decimal?     @db.Decimal(14, 2) // running balance if present on the statement
+  category    String?      // QuickBooks account/category guess (editable)
+  reference   String?      // cheque number / reference id
+  excluded    Boolean      @default(false) // staff can drop a row from the export
+  sortIndex   Int          @default(0)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  statement BankStatement @relation(fields: [statementId], references: [id], onDelete: Cascade)
+
+  @@index([statementId])
 }
