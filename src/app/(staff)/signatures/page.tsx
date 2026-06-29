@@ -67,7 +67,12 @@ export default async function SignaturesPage({
               {requests.map((req) => (
                 <tr key={req.id} className="hover:bg-brand-greyLight/50">
                   <td className="px-4 py-3">
-                    <p className="font-medium text-foreground">{req.title}</p>
+                    <Link href={`/signatures/${req.id}`} className="font-medium text-foreground hover:text-brand-navy">
+                      {req.title}
+                    </Link>
+                    {req.status === "SIGNED" && req.signerName && (
+                      <p className="text-xs text-green-700 mt-0.5">Signed by {req.signerName}</p>
+                    )}
                     <p className="text-xs text-muted-foreground mt-0.5">
                       Provider: {req.provider}
                       {req.expiresAt && ` · Expires ${formatDate(req.expiresAt)}`}

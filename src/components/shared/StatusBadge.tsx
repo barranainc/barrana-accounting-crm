@@ -53,7 +53,7 @@ const statusLabels: Record<string, string> = {
   COMPLETED:         "Completed",
   ON_HOLD:           "On Hold",
   REQUESTED:         "Requested",
-  UPLOADED:          "Uploaded",
+  UPLOADED:          "Submitted",
   UNDER_REVIEW:      "Under Review",
   ACCEPTED:          "Accepted",
   REJECTED:          "Rejected",

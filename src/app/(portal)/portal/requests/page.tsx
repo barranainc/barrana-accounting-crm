@@ -16,7 +16,7 @@ export const metadata = { title: "Document Requests" };
 const STATUS_DESCRIPTIONS: Record<string, string> = {
   REQUESTED: "Your accountant needs this document from you.",
   NEEDS_REPLACEMENT: "The document you uploaded needs to be replaced.",
-  UPLOADED: "You have uploaded this — your accountant is reviewing it.",
+  UPLOADED: "You've submitted this. Your accountant is reviewing it.",
   UNDER_REVIEW: "Your accountant is reviewing this document.",
   ACCEPTED: "Your accountant has accepted this document.",
   REJECTED: "This document was rejected. Please re-upload.",
@@ -101,7 +101,7 @@ export default async function PortalRequestsPage({
       <form className="mb-5 flex flex-wrap gap-3">
         <select name="status" defaultValue={status ?? ""} className="h-9 rounded-md border border-brand-greyBorder bg-white px-3 text-sm">
           <option value="">All statuses</option>
-          {STATUS_OPTS.map((s) => <option key={s} value={s}>{s.replace(/_/g, " ")}</option>)}
+          {STATUS_OPTS.map((s) => <option key={s} value={s}>{s === "UPLOADED" ? "Submitted" : s.replace(/_/g, " ")}</option>)}
         </select>
         <button type="submit" className="h-9 rounded-md bg-brand-navy px-4 text-sm font-medium text-white hover:bg-brand-navyDark">Filter</button>
         {status && (

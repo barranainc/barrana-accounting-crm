@@ -67,14 +67,30 @@ export async function createBulkDocumentRequests(
   );
 
   if (requests.length > 0) {
+    const clientId = requests[0].clientId;
     await createAuditEvent({
       action: AuditAction.DOCUMENT_REQUESTS_BULK_CREATED,
       actorUserId: session.user.id,
-      clientId: requests[0].clientId,
+      clientId,
       entityType: "DocumentRequest",
       entityId: requests[0].id,
       metadata: { count: requests.length, template: templateName },
     });
+
+    // One consolidated notification to the client's portal users.
+    const count = requests.length;
+    const plural = count !== 1 ? "s" : "";
+    const links = await db.clientUserLink.findMany({ where: { clientId } });
+    for (const link of links) {
+      await createNotification({
+        userId: link.userId,
+        title: `${count} document${plural} requested`,
+        body: `We've requested ${count} document${plural}. Please review and upload.`,
+        link: `/portal/requests`,
+      });
+    }
+
+    revalidatePath(`/clients/${clientId}`);
   }
 
   revalidatePath("/documents/requests");

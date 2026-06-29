@@ -5,6 +5,9 @@ import { SectionCard } from "@/components/shared/SectionCard";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { formatDate, formatDateTime, fileSizeLabel, fileUrl } from "@/lib/utils";
 import { reviewDocument, setDocumentVisibility } from "@/actions/documents";
+import { DocumentCommentForm } from "@/components/documents/DocumentCommentForm";
+import { DeleteCommentButton } from "@/components/documents/DeleteCommentButton";
+import { RequestSignatureButton } from "@/components/signatures/RequestSignatureButton";
 import Link from "next/link";
 import {
   FileText, Download, Eye, ArrowLeft, Lock, Globe,
@@ -34,7 +37,8 @@ export default async function DocumentDetailPage({
 }: {
   params: Promise<{ documentId: string }>;
 }) {
-  await requireStaff();
+  const session = await requireStaff();
+  const canDelete = (["SUPER_ADMIN", "CPA_ADMIN"] as string[]).includes(session.user.role);
   const { documentId } = await params;
 
   const doc = await db.document.findUnique({
@@ -52,6 +56,12 @@ export default async function DocumentDetailPage({
   });
 
   if (!doc) notFound();
+
+  const sigReq = await db.signatureRequest.findFirst({
+    where: { documentId },
+    orderBy: { createdAt: "desc" },
+    select: { id: true, status: true, signerName: true },
+  });
 
   // Server action — review status change
   async function handleReview(formData: FormData) {
@@ -235,27 +245,40 @@ export default async function DocumentDetailPage({
           </SectionCard>
 
           {/* Comments */}
-          <SectionCard title={`Comments (${doc.comments.length})`}>
+          <SectionCard title={`Comments & questions (${doc.comments.length})`}>
             {doc.comments.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-2">No comments yet.</p>
+              <p className="text-sm text-muted-foreground py-2">
+                No comments yet. Ask the client a question about this document below.
+              </p>
             ) : (
               <ul className="divide-y divide-brand-greyBorder">
-                {doc.comments.map((comment) => (
-                  <li key={comment.id} className="py-3 first:pt-0 last:pb-0">
-                    <div className="flex items-start justify-between gap-3 mb-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-semibold">{comment.author.name}</span>
-                        {comment.isInternal && (
-                          <span className="text-xs bg-brand-plum/10 text-brand-plum rounded px-1.5 py-0.5">Internal</span>
-                        )}
+                {doc.comments.map((comment) => {
+                  const fromClient = comment.author.role === "CLIENT_USER";
+                  return (
+                    <li key={comment.id} className="py-3 first:pt-0">
+                      <div className="flex items-start justify-between gap-3 mb-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-semibold">{comment.author.name}</span>
+                          {comment.isInternal ? (
+                            <span className="text-xs bg-brand-plum/10 text-brand-plum rounded px-1.5 py-0.5">Internal</span>
+                          ) : fromClient ? (
+                            <span className="text-xs bg-brand-navy/10 text-brand-navy rounded px-1.5 py-0.5">Client</span>
+                          ) : (
+                            <span className="text-xs bg-green-50 text-green-700 rounded px-1.5 py-0.5">To client</span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="text-xs text-muted-foreground">{formatDateTime(comment.createdAt)}</span>
+                          {canDelete && <DeleteCommentButton commentId={comment.id} />}
+                        </div>
                       </div>
-                      <span className="text-xs text-muted-foreground shrink-0">{formatDateTime(comment.createdAt)}</span>
-                    </div>
-                    <p className="text-sm text-foreground whitespace-pre-wrap">{comment.body}</p>
-                  </li>
-                ))}
+                      <p className="text-sm text-foreground whitespace-pre-wrap">{comment.body}</p>
+                    </li>
+                  );
+                })}
               </ul>
             )}
+            <DocumentCommentForm documentId={doc.id} isStaff />
           </SectionCard>
         </div>
 
@@ -307,6 +330,27 @@ export default async function DocumentDetailPage({
                 {isClientVisible ? "Make internal" : "Make client-visible"}
               </button>
             </form>
+          </SectionCard>
+
+          {/* Signature */}
+          <SectionCard title="Signature">
+            {sigReq ? (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <StatusBadge status={sigReq.status} />
+                  {sigReq.status === "SIGNED" && sigReq.signerName && (
+                    <span className="text-xs text-muted-foreground">by {sigReq.signerName}</span>
+                  )}
+                </div>
+                <Link href={`/signatures/${sigReq.id}`} className="inline-flex items-center gap-1 text-xs text-brand-navy hover:underline">
+                  View signature request
+                </Link>
+              </div>
+            ) : isClientVisible ? (
+              <RequestSignatureButton clientId={doc.client.id} documentId={doc.id} docTitle={doc.title} />
+            ) : (
+              <p className="text-xs text-muted-foreground">Make this document client-visible to request a signature.</p>
+            )}
           </SectionCard>
 
           {/* Version info */}

@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { assertStaff, assertAuth, assertClientAccess } from "@/lib/permissions";
+import { assertStaff, assertAuth, assertClientAccess, assertAdmin } from "@/lib/permissions";
 import { isStaff } from "@/lib/permissions";
 import { createAuditEvent } from "@/lib/audit";
 import { AuditAction } from "@/lib/audit-actions";
@@ -325,8 +325,62 @@ export async function addDocumentComment(formData: z.infer<typeof commentSchema>
     metadata: { documentId: data.documentId, isInternal: data.isInternal },
   });
 
+  // Notify the other party. Internal staff notes notify nobody on the client side.
+  const isClientAuthor = session.user.role === "CLIENT_USER";
+  if (isClientAuthor) {
+    const staffUsers = await db.user.findMany({
+      where: { role: { in: ["SUPER_ADMIN", "CPA_ADMIN", "ASSISTANT"] }, status: "ACTIVE" },
+      select: { id: true },
+    });
+    for (const u of staffUsers) {
+      await createNotification({
+        userId: u.id,
+        title: "Client replied on a document",
+        body: document.title,
+        link: `/documents/${data.documentId}`,
+      });
+    }
+  } else if (!data.isInternal) {
+    const links = await db.clientUserLink.findMany({ where: { clientId: document.clientId } });
+    for (const link of links) {
+      await createNotification({
+        userId: link.userId,
+        title: "Question about your document",
+        body: document.title,
+        link: `/portal/documents/${data.documentId}`,
+      });
+    }
+  }
+
   revalidatePath(`/documents/${data.documentId}`);
+  revalidatePath(`/portal/documents/${data.documentId}`);
   return comment;
+}
+
+// Admins can delete any message on a document, at any time.
+export async function deleteDocumentComment(commentId: string) {
+  const session = await assertAdmin();
+
+  const comment = await db.documentComment.findUniqueOrThrow({ where: { id: commentId } });
+  const doc = await db.document.findUniqueOrThrow({
+    where: { id: comment.documentId },
+    select: { clientId: true },
+  });
+
+  await db.documentComment.delete({ where: { id: commentId } });
+
+  await createAuditEvent({
+    action: AuditAction.DOCUMENT_COMMENT_DELETED,
+    actorUserId: session.user.id,
+    clientId: doc.clientId,
+    entityType: "DocumentComment",
+    entityId: commentId,
+    metadata: { documentId: comment.documentId, isInternal: comment.isInternal },
+  });
+
+  revalidatePath(`/documents/${comment.documentId}`);
+  revalidatePath(`/portal/documents/${comment.documentId}`);
+  return { id: commentId };
 }
 
 // ─── Queries ──────────────────────────────────────────────────────────────────
@@ -350,4 +404,36 @@ export async function getDocumentComments(documentId: string) {
     include: { author: { select: { id: true, name: true, role: true } } },
     orderBy: { createdAt: "asc" },
   });
+}
+
+// Client marks a document's incoming (staff) messages as read — flips the chat icon.
+export async function markDocumentMessagesRead(documentId: string) {
+  const session = await assertAuth();
+  if (session.user.role !== "CLIENT_USER") return { marked: 0 };
+
+  const document = await db.document.findUniqueOrThrow({
+    where: { id: documentId },
+    select: { clientId: true },
+  });
+  await assertClientAccess(document.clientId);
+
+  const unread = await db.documentComment.findMany({
+    where: {
+      documentId,
+      isInternal: false,
+      readByClientAt: null,
+      author: { role: { not: "CLIENT_USER" } },
+    },
+    select: { id: true },
+  });
+  if (unread.length === 0) return { marked: 0 };
+
+  await db.documentComment.updateMany({
+    where: { id: { in: unread.map((c) => c.id) } },
+    data: { readByClientAt: new Date() },
+  });
+
+  revalidatePath("/portal/documents");
+  revalidatePath(`/portal/documents/${documentId}`);
+  return { marked: unread.length };
 }

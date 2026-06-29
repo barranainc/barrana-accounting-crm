@@ -14,6 +14,7 @@ export async function ClientDocumentsTab({ clientId }: ClientDocumentsTabProps) 
     where: { clientId, isCurrentVersion: true },
     include: {
       uploadedBy: { select: { name: true } },
+      documentRequest: { select: { title: true, category: true } },
     },
     orderBy: { createdAt: "desc" },
   });
@@ -51,10 +52,15 @@ export async function ClientDocumentsTab({ clientId }: ClientDocumentsTabProps) 
                     <div>
                       <span className="font-medium text-foreground">{doc.title}</span>
                       <p className="text-xs text-muted-foreground mt-0.5 truncate max-w-xs">{doc.fileName}</p>
+                      {doc.documentRequest && (
+                        <p className="text-xs text-brand-navy mt-0.5 max-w-xs">
+                          For: {doc.documentRequest.title}
+                        </p>
+                      )}
                     </div>
                   </td>
                   <td className="py-3 pr-4 text-muted-foreground hidden sm:table-cell capitalize">
-                    {doc.category.replace(/_/g, " ").toLowerCase()}
+                    {doc.documentRequest?.category ?? doc.category.replace(/_/g, " ").toLowerCase()}
                   </td>
                   <td className="py-3 pr-4">
                     <StatusBadge status={doc.reviewStatus} />

@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { formatDate } from "@/lib/utils";
+import { MessageComposer } from "@/components/messages/MessageComposer";
 import Link from "next/link";
 import { ArrowLeft, Lock } from "lucide-react";
 
@@ -115,6 +116,15 @@ export default async function MessageThreadPage({ params }: { params: Promise<{ 
               </div>
             );
           })
+        )}
+      </div>
+
+      {/* Reply */}
+      <div className="mt-5 rounded-lg border border-brand-greyBorder bg-white p-4 shadow-sm">
+        {thread.status === "CLOSED" ? (
+          <p className="text-center text-sm text-muted-foreground">This thread is closed.</p>
+        ) : (
+          <MessageComposer threadId={thread.id} isStaff />
         )}
       </div>
     </div>

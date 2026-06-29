@@ -1,5 +1,7 @@
 import { db } from "@/lib/db";
 import { SectionCard } from "@/components/shared/SectionCard";
+import { RequestDocumentsDialog } from "@/components/clients/RequestDocumentsDialog";
+import type { ClientTypeKey } from "@/lib/document-checklist";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { PriorityBadge } from "@/components/shared/PriorityBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -8,9 +10,10 @@ import { Inbox, AlertCircle } from "lucide-react";
 
 interface ClientRequestsTabProps {
   clientId: string;
+  clientType: ClientTypeKey;
 }
 
-export async function ClientRequestsTab({ clientId }: ClientRequestsTabProps) {
+export async function ClientRequestsTab({ clientId, clientType }: ClientRequestsTabProps) {
   const requests = await db.documentRequest.findMany({
     where: { clientId },
     include: {
@@ -21,10 +24,15 @@ export async function ClientRequestsTab({ clientId }: ClientRequestsTabProps) {
     orderBy: { createdAt: "desc" },
   });
 
+  const existingTitles = requests.filter((r) => r.status !== "ARCHIVED").map((r) => r.title);
+
   return (
     <SectionCard
       title="Document Requests"
       description={`${requests.length} request${requests.length !== 1 ? "s" : ""}`}
+      action={
+        <RequestDocumentsDialog clientId={clientId} clientType={clientType} existingTitles={existingTitles} />
+      }
     >
       {requests.length === 0 ? (
         <EmptyState

@@ -18,9 +18,10 @@ const navItems = [
 interface PortalNavProps {
   userName: string;
   businessName?: string;
+  documentsUnread?: number;
 }
 
-export function PortalNav({ userName, businessName }: PortalNavProps) {
+export function PortalNav({ userName, businessName, documentsUnread = 0 }: PortalNavProps) {
   const pathname = usePathname();
 
   return (
@@ -52,6 +53,11 @@ export function PortalNav({ userName, businessName }: PortalNavProps) {
                 )}
               >
                 {label}
+                {href === "/portal/documents" && documentsUnread > 0 && (
+                  <span className="ml-1.5 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 align-middle text-[10px] font-semibold text-white">
+                    {documentsUnread}
+                  </span>
+                )}
               </Link>
             ))}
           </nav>

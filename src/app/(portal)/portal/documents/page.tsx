@@ -5,6 +5,8 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { formatDate, fileSizeLabel, fileUrl } from "@/lib/utils";
+import Link from "next/link";
+import { DocumentChatLauncher } from "@/components/documents/DocumentChatLauncher";
 import { FileText, Download, Eye } from "lucide-react";
 
 export const metadata = { title: "My Documents" };
@@ -48,6 +50,7 @@ export default async function PortalDocumentsPage({
     },
     include: {
       engagement: { select: { id: true, title: true } },
+      documentRequest: { select: { title: true, category: true } },
     },
     orderBy: { createdAt: "desc" },
     take: 100,
@@ -59,6 +62,19 @@ export default async function PortalDocumentsPage({
     distinct: ["category"],
   });
   const availableCategories = categories.map((c) => c.category).filter(Boolean);
+
+  // Unread incoming (staff) messages per document — drives the chat icon colour.
+  const unreadComments = await db.documentComment.findMany({
+    where: {
+      documentId: { in: documents.map((d) => d.id) },
+      isInternal: false,
+      readByClientAt: null,
+      author: { role: { not: "CLIENT_USER" } },
+    },
+    select: { documentId: true },
+  });
+  const unreadByDoc = new Map<string, number>();
+  for (const c of unreadComments) unreadByDoc.set(c.documentId, (unreadByDoc.get(c.documentId) ?? 0) + 1);
 
   return (
     <div>
@@ -99,14 +115,29 @@ export default async function PortalDocumentsPage({
               {documents.map((doc) => (
                 <tr key={doc.id} className="hover:bg-brand-greyLight/50">
                   <td className="px-4 py-3">
-                    <p className="font-medium text-foreground">{doc.title}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{fileSizeLabel(doc.fileSize)}</p>
+                    <div className="flex items-start gap-2.5">
+                      <DocumentChatLauncher
+                        documentId={doc.id}
+                        docTitle={doc.title}
+                        forRequest={doc.documentRequest?.title ?? null}
+                        initialUnread={unreadByDoc.get(doc.id) ?? 0}
+                      />
+                      <div className="min-w-0">
+                        <Link href={`/portal/documents/${doc.id}`} className="font-medium text-foreground hover:text-brand-navy">
+                          {doc.title}
+                        </Link>
+                        {doc.documentRequest && (
+                          <p className="text-xs text-brand-navy mt-0.5">For: {doc.documentRequest.title}</p>
+                        )}
+                        <p className="text-xs text-muted-foreground mt-0.5">{fileSizeLabel(doc.fileSize)}</p>
+                      </div>
+                    </div>
                   </td>
                   <td className="px-4 py-3 text-muted-foreground hidden md:table-cell text-xs">
                     {doc.engagement?.title ?? "—"}
                   </td>
                   <td className="px-4 py-3 text-muted-foreground hidden lg:table-cell text-xs">
-                    {doc.category ? (CATEGORY_LABELS[doc.category] ?? doc.category) : "—"}
+                    {doc.documentRequest?.category ?? (doc.category ? (CATEGORY_LABELS[doc.category] ?? doc.category) : "—")}
                   </td>
                   <td className="px-4 py-3">
                     <StatusBadge status={doc.reviewStatus} />

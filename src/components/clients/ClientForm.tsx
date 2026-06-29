@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +13,8 @@ import {
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
 } from "@/components/ui/select";
 import { createClient, updateClient } from "@/actions/clients";
+import { DocumentChecklistSidebar } from "@/components/clients/DocumentChecklistSidebar";
+import { defaultCheckedMap, type ClientTypeKey } from "@/lib/document-checklist";
 import { Loader2 } from "lucide-react";
 
 const schema = z.object({
@@ -71,11 +73,35 @@ export function ClientForm({ mode, clientId, defaultValues }: ClientFormProps) {
       },
     });
 
+  const clientType = watch("clientType");
+  const status = watch("status");
+  const showChecklist = mode === "create";
+
+  const [checkedDocs, setCheckedDocs] = useState<Record<string, boolean>>(() =>
+    defaultCheckedMap((defaultValues?.clientType as ClientTypeKey) ?? "CORPORATION")
+  );
+  // Each client type has its own checklist — reset the selection when the type changes.
+  useEffect(() => {
+    if (showChecklist) setCheckedDocs(defaultCheckedMap(clientType as ClientTypeKey));
+  }, [clientType, showChecklist]);
+
+  function toggleDoc(key: string) {
+    setCheckedDocs((p) => ({ ...p, [key]: !p[key] }));
+  }
+  function setManyDocs(keys: string[], value: boolean) {
+    setCheckedDocs((p) => {
+      const next = { ...p };
+      for (const k of keys) next[k] = value;
+      return next;
+    });
+  }
+
   async function onSubmit(data: ClientFormValues) {
     setError(null);
     try {
       if (mode === "create") {
-        const result = await createClient(data);
+        const selectedDocumentKeys = Object.keys(checkedDocs).filter((k) => checkedDocs[k]);
+        const result = await createClient({ ...data, selectedDocumentKeys });
         router.push(`/clients/${result.id}`);
       } else if (clientId) {
         await updateClient(clientId, data);
@@ -86,17 +112,16 @@ export function ClientForm({ mode, clientId, defaultValues }: ClientFormProps) {
     }
   }
 
-  const clientType = watch("clientType");
-  const status = watch("status");
-
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-2xl">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       {error && (
         <div className="rounded-md bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
           {error}
         </div>
       )}
 
+      <div className={showChecklist ? "grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px]" : "max-w-2xl"}>
+        <div className="space-y-6 min-w-0">
       {/* Business identity */}
       <div className="rounded-lg border border-brand-greyBorder bg-white p-5 space-y-4">
         <h2 className="text-sm font-semibold text-foreground">Business profile</h2>
@@ -193,6 +218,17 @@ export function ClientForm({ mode, clientId, defaultValues }: ClientFormProps) {
         <Label htmlFor="internalNotes">Internal notes</Label>
         <p className="text-xs text-muted-foreground">Visible to staff only — not shown to the client.</p>
         <Textarea id="internalNotes" rows={3} {...register("internalNotes")} />
+      </div>
+        </div>
+
+        {showChecklist && (
+          <DocumentChecklistSidebar
+            clientType={clientType as ClientTypeKey}
+            checked={checkedDocs}
+            onToggle={toggleDoc}
+            onSetMany={setManyDocs}
+          />
+        )}
       </div>
 
       <div className="flex items-center gap-3">

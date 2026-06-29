@@ -130,7 +130,7 @@ export default async function ClientDetailPage({
       {activeTab === "contacts"    && <ClientContactsTab clientId={clientId} />}
       {activeTab === "engagements" && <ClientEngagementsTab clientId={clientId} />}
       {activeTab === "documents"   && <ClientDocumentsTab clientId={clientId} />}
-      {activeTab === "requests"    && <ClientRequestsTab clientId={clientId} />}
+      {activeTab === "requests"    && <ClientRequestsTab clientId={clientId} clientType={client.clientType} />}
       {activeTab === "messages"    && <ClientMessagesTab clientId={clientId} />}
       {activeTab === "notices"     && <ClientNoticesTab clientId={clientId} />}
       {activeTab === "tasks"       && <ClientTasksTab clientId={clientId} />}

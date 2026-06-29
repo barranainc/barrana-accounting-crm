@@ -6,6 +6,7 @@ import { createAuditEvent } from "@/lib/audit";
 import { AuditAction } from "@/lib/audit-actions";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { resolveChecklistKeys, type ClientTypeKey } from "@/lib/document-checklist";
 
 const clientSchema = z.object({
   businessName: z.string().min(1, "Business name is required"),
@@ -23,11 +24,12 @@ const clientSchema = z.object({
   postalCode: z.string().optional(),
   internalNotes: z.string().optional(),
   status: z.enum(["ACTIVE", "ONBOARDING", "INACTIVE", "ARCHIVED"]).default("ONBOARDING"),
+  selectedDocumentKeys: z.array(z.string()).optional(),
 });
 
 export async function createClient(formData: z.infer<typeof clientSchema>) {
   const session = await assertStaff();
-  const data = clientSchema.parse(formData);
+  const { selectedDocumentKeys, ...data } = clientSchema.parse(formData);
 
   // Duplicate warning check
   const existing = await db.client.findFirst({
@@ -43,13 +45,29 @@ export async function createClient(formData: z.infer<typeof clientSchema>) {
 
   const client = await db.client.create({ data });
 
+  // Persist the checked document-checklist items as document requests for this client.
+  const checklistItems = selectedDocumentKeys?.length
+    ? resolveChecklistKeys(data.clientType as ClientTypeKey, selectedDocumentKeys)
+    : [];
+  if (checklistItems.length) {
+    await db.documentRequest.createMany({
+      data: checklistItems.map((it) => ({
+        clientId: client.id,
+        requestedById: session.user.id,
+        title: it.title,
+        description: it.note ?? null,
+        category: it.category,
+      })),
+    });
+  }
+
   await createAuditEvent({
     action: AuditAction.CLIENT_CREATED,
     actorUserId: session.user.id,
     clientId: client.id,
     entityType: "Client",
     entityId: client.id,
-    metadata: { businessName: client.businessName },
+    metadata: { businessName: client.businessName, documentRequestCount: checklistItems.length },
   });
 
   revalidatePath("/clients");
@@ -59,9 +77,11 @@ export async function createClient(formData: z.infer<typeof clientSchema>) {
 export async function updateClient(clientId: string, formData: Partial<z.infer<typeof clientSchema>>) {
   const session = await assertStaff();
 
+  const { selectedDocumentKeys, ...data } = formData;
+  void selectedDocumentKeys; // checklist is set at creation; not editable here in this MVP
   const client = await db.client.update({
     where: { id: clientId },
-    data: formData,
+    data,
   });
 
   await createAuditEvent({

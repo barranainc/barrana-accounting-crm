@@ -4,6 +4,8 @@ import { db } from "@/lib/db";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { StartDiscussion } from "@/components/messages/StartDiscussion";
+import { MessageComposer } from "@/components/messages/MessageComposer";
 import { timeAgo } from "@/lib/utils";
 import { MessageSquare } from "lucide-react";
 
@@ -68,6 +70,10 @@ export default async function PortalMessagesPage({
     <div>
       <PageHeader title="Messages" description="Communicate securely with your accounting team." />
 
+      <div className="mb-5">
+        <StartDiscussion clientId={scope.clientId} />
+      </div>
+
       {/* Filter */}
       <form className="mb-5 flex flex-wrap gap-3">
         <select name="status" defaultValue={status ?? ""} className="h-9 rounded-md border border-brand-greyBorder bg-white px-3 text-sm">
@@ -81,7 +87,7 @@ export default async function PortalMessagesPage({
       </form>
 
       {threads.length === 0 ? (
-        <EmptyState icon={MessageSquare} title="No messages yet" description="Your accounting team will reach out here." />
+        <EmptyState icon={MessageSquare} title="No messages yet" description="Start a discussion above — or your accounting team will reach out here." />
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
           {/* Thread list */}
@@ -161,17 +167,14 @@ export default async function PortalMessagesPage({
                   )}
                 </div>
 
-                {/* Reply note */}
-                {activeThread.status !== "CLOSED" && (
-                  <div className="px-5 py-4 border-t border-brand-greyBorder bg-brand-greyLight/50">
-                    <p className="text-xs text-muted-foreground text-center">
-                      To reply, contact your accounting team directly. Replies will appear here.
-                    </p>
+                {/* Reply */}
+                {activeThread.status !== "CLOSED" ? (
+                  <div className="border-t border-brand-greyBorder px-5 py-4">
+                    <MessageComposer threadId={activeThread.id} />
                   </div>
-                )}
-                {activeThread.status === "CLOSED" && (
-                  <div className="px-5 py-3 border-t border-brand-greyBorder">
-                    <p className="text-xs text-muted-foreground text-center">This thread is closed.</p>
+                ) : (
+                  <div className="border-t border-brand-greyBorder px-5 py-3">
+                    <p className="text-center text-xs text-muted-foreground">This thread is closed.</p>
                   </div>
                 )}
               </>

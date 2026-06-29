@@ -48,7 +48,7 @@ export default async function RequestsPage({
       <form className="mb-5 flex flex-wrap gap-3">
         <select name="status" defaultValue={status ?? ""} className="h-9 rounded-md border border-brand-greyBorder bg-white px-3 text-sm">
           <option value="">All statuses</option>
-          {STATUS_OPTS.map((s) => <option key={s} value={s}>{s.replace(/_/g," ")}</option>)}
+          {STATUS_OPTS.map((s) => <option key={s} value={s}>{s === "UPLOADED" ? "Submitted" : s.replace(/_/g," ")}</option>)}
         </select>
         <select name="priority" defaultValue={priority ?? ""} className="h-9 rounded-md border border-brand-greyBorder bg-white px-3 text-sm">
           <option value="">All priorities</option>

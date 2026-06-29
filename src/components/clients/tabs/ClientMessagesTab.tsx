@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { SectionCard } from "@/components/shared/SectionCard";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { StartDiscussion } from "@/components/messages/StartDiscussion";
 import { timeAgo } from "@/lib/utils";
 import { MessageSquare } from "lucide-react";
 import Link from "next/link";
@@ -27,6 +28,7 @@ export async function ClientMessagesTab({ clientId }: ClientMessagesTabProps) {
     <SectionCard
       title="Message Threads"
       description={`${threads.length} thread${threads.length !== 1 ? "s" : ""}`}
+      action={<StartDiscussion clientId={clientId} target="staff" />}
     >
       {threads.length === 0 ? (
         <EmptyState

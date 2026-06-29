@@ -7,6 +7,7 @@ import { AuditAction } from "@/lib/audit-actions";
 import { createNotification } from "@/lib/notifications";
 import { signatureProvider } from "@/lib/signatures";
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { z } from "zod";
 
 const sigRequestSchema = z.object({
@@ -141,18 +142,52 @@ export async function markSignatureViewed(sigRequestId: string) {
   return updated;
 }
 
-export async function completeSignature(sigRequestId: string) {
+interface SignaturePayload {
+  signerName: string;
+  signatureType: "drawn" | "typed";
+  signatureImage?: string | null; // PNG data URL when drawn
+  consent: boolean;
+}
+
+export async function completeSignature(sigRequestId: string, payload: SignaturePayload) {
   const session = await assertAuth();
   const sigReq = await db.signatureRequest.findUniqueOrThrow({ where: { id: sigRequestId } });
   await assertClientAccess(sigReq.clientId);
 
   if (!["SENT", "VIEWED"].includes(sigReq.status)) {
-    throw new Error("This signature request cannot be signed in its current state");
+    throw new Error("This signature request cannot be signed in its current state.");
   }
+  if (!payload.consent) {
+    throw new Error("You must agree to sign electronically before signing.");
+  }
+  const signerName = payload.signerName?.trim();
+  if (!signerName) throw new Error("Please enter your full legal name.");
+  if (payload.signatureType === "drawn" && !payload.signatureImage) {
+    throw new Error("Please draw your signature before signing.");
+  }
+
+  // Audit-trail metadata captured at the moment of signing.
+  const h = await headers();
+  const signerIp =
+    (h.get("x-forwarded-for")?.split(",")[0] ?? h.get("x-real-ip") ?? "").trim() || null;
+  const signerUserAgent = h.get("user-agent") ?? null;
+  const consentText =
+    `I, ${signerName}, agree to electronically sign "${sigReq.title}". I understand that my electronic ` +
+    `signature is legally binding and has the same effect as a handwritten signature under applicable ` +
+    `e-signature law (e.g. Canada's PIPEDA / Electronic Documents).`;
 
   const updated = await db.signatureRequest.update({
     where: { id: sigRequestId },
-    data: { status: "SIGNED", signedAt: new Date() },
+    data: {
+      status: "SIGNED",
+      signedAt: new Date(),
+      signerName,
+      signatureType: payload.signatureType,
+      signatureImage: payload.signatureImage ?? null,
+      consentText,
+      signerIp,
+      signerUserAgent,
+    },
   });
 
   await createAuditEvent({
@@ -161,7 +196,7 @@ export async function completeSignature(sigRequestId: string) {
     clientId: sigReq.clientId,
     entityType: "SignatureRequest",
     entityId: sigRequestId,
-    metadata: { provider: sigReq.provider },
+    metadata: { provider: sigReq.provider, signerName, signatureType: payload.signatureType, signerIp },
   });
 
   // Notify staff
@@ -173,13 +208,15 @@ export async function completeSignature(sigRequestId: string) {
     await createNotification({
       userId: u.id,
       title: "Document signed",
-      body: sigReq.title,
-      link: `/signatures`,
+      body: `${sigReq.title} — signed by ${signerName}`,
+      link: `/signatures/${sigRequestId}`,
     });
   }
 
   revalidatePath("/signatures");
+  revalidatePath(`/signatures/${sigRequestId}`);
   revalidatePath(`/clients/${sigReq.clientId}`);
+  revalidatePath("/portal/signatures");
   return updated;
 }
 
