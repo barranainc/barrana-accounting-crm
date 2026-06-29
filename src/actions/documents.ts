@@ -406,34 +406,38 @@ export async function getDocumentComments(documentId: string) {
   });
 }
 
-// Client marks a document's incoming (staff) messages as read — flips the chat icon.
+// Marks a document's incoming messages read — flips the chat icon.
+// Client reads incoming staff messages; staff read incoming client replies.
 export async function markDocumentMessagesRead(documentId: string) {
   const session = await assertAuth();
-  if (session.user.role !== "CLIENT_USER") return { marked: 0 };
+  const isClient = session.user.role === "CLIENT_USER";
 
   const document = await db.document.findUniqueOrThrow({
     where: { id: documentId },
     select: { clientId: true },
   });
-  await assertClientAccess(document.clientId);
+  if (isClient) await assertClientAccess(document.clientId);
 
   const unread = await db.documentComment.findMany({
-    where: {
-      documentId,
-      isInternal: false,
-      readByClientAt: null,
-      author: { role: { not: "CLIENT_USER" } },
-    },
+    where: isClient
+      ? { documentId, isInternal: false, readByClientAt: null, author: { role: { not: "CLIENT_USER" } } }
+      : { documentId, isInternal: false, readByStaffAt: null, author: { role: "CLIENT_USER" } },
     select: { id: true },
   });
   if (unread.length === 0) return { marked: 0 };
 
   await db.documentComment.updateMany({
     where: { id: { in: unread.map((c) => c.id) } },
-    data: { readByClientAt: new Date() },
+    data: isClient ? { readByClientAt: new Date() } : { readByStaffAt: new Date() },
   });
 
-  revalidatePath("/portal/documents");
-  revalidatePath(`/portal/documents/${documentId}`);
+  if (isClient) {
+    revalidatePath("/portal/documents");
+    revalidatePath(`/portal/documents/${documentId}`);
+  } else {
+    revalidatePath("/documents");
+    revalidatePath(`/documents/${documentId}`);
+    revalidatePath(`/clients/${document.clientId}`);
+  }
   return { marked: unread.length };
 }

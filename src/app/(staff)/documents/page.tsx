@@ -5,6 +5,7 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { formatDate, fileSizeLabel, fileUrl } from "@/lib/utils";
 import { FileText, ExternalLink, Download } from "lucide-react";
+import { DocumentChatLauncher } from "@/components/documents/DocumentChatLauncher";
 import Link from "next/link";
 
 export const metadata = { title: "Documents" };
@@ -34,10 +35,24 @@ export default async function DocumentsPage({
     include: {
       client: { select: { id: true, businessName: true } },
       uploadedBy: { select: { name: true } },
+      documentRequest: { select: { title: true } },
     },
     orderBy: { createdAt: "desc" },
     take: 100,
   });
+
+  // Unread incoming client replies per document — drives the staff chat icon.
+  const unreadComments = await db.documentComment.findMany({
+    where: {
+      documentId: { in: documents.map((d) => d.id) },
+      isInternal: false,
+      readByStaffAt: null,
+      author: { role: "CLIENT_USER" },
+    },
+    select: { documentId: true },
+  });
+  const unreadByDoc = new Map<string, number>();
+  for (const c of unreadComments) unreadByDoc.set(c.documentId, (unreadByDoc.get(c.documentId) ?? 0) + 1);
 
   return (
     <div>
@@ -89,11 +104,20 @@ export default async function DocumentsPage({
               {documents.map((doc) => (
                 <tr key={doc.id} className="hover:bg-brand-greyLight/50">
                   <td className="px-4 py-3">
-                    <div>
-                      <Link href={`/documents/${doc.id}`} className="font-medium text-foreground hover:text-brand-navy">
-                        {doc.title}
-                      </Link>
-                      <p className="text-xs text-muted-foreground mt-0.5">{doc.fileName}</p>
+                    <div className="flex items-start gap-2">
+                      <DocumentChatLauncher
+                        documentId={doc.id}
+                        docTitle={doc.title}
+                        forRequest={doc.documentRequest?.title ?? null}
+                        initialUnread={unreadByDoc.get(doc.id) ?? 0}
+                        isStaff
+                      />
+                      <div className="min-w-0">
+                        <Link href={`/documents/${doc.id}`} className="font-medium text-foreground hover:text-brand-navy">
+                          {doc.title}
+                        </Link>
+                        <p className="text-xs text-muted-foreground mt-0.5">{doc.fileName}</p>
+                      </div>
                     </div>
                   </td>
                   <td className="px-4 py-3 hidden md:table-cell">

@@ -374,6 +374,7 @@ model DocumentComment {
   body           String
   isInternal     Boolean   @default(true)
   readByClientAt DateTime?
+  readByStaffAt  DateTime?
   createdAt      DateTime  @default(now())
 
   document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)

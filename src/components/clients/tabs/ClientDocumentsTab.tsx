@@ -3,6 +3,7 @@ import { SectionCard } from "@/components/shared/SectionCard";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { formatDate, fileSizeLabel } from "@/lib/utils";
+import { DocumentChatLauncher } from "@/components/documents/DocumentChatLauncher";
 import { FileText, ExternalLink } from "lucide-react";
 
 interface ClientDocumentsTabProps {
@@ -18,6 +19,19 @@ export async function ClientDocumentsTab({ clientId }: ClientDocumentsTabProps) 
     },
     orderBy: { createdAt: "desc" },
   });
+
+  // Unread incoming client replies per document — drives the staff chat icon.
+  const unreadComments = await db.documentComment.findMany({
+    where: {
+      documentId: { in: documents.map((d) => d.id) },
+      isInternal: false,
+      readByStaffAt: null,
+      author: { role: "CLIENT_USER" },
+    },
+    select: { documentId: true },
+  });
+  const unreadByDoc = new Map<string, number>();
+  for (const c of unreadComments) unreadByDoc.set(c.documentId, (unreadByDoc.get(c.documentId) ?? 0) + 1);
 
   return (
     <SectionCard
@@ -49,14 +63,23 @@ export async function ClientDocumentsTab({ clientId }: ClientDocumentsTabProps) 
               {documents.map((doc) => (
                 <tr key={doc.id} className="hover:bg-brand-greyLight/50 transition-colors">
                   <td className="py-3 pr-4">
-                    <div>
-                      <span className="font-medium text-foreground">{doc.title}</span>
-                      <p className="text-xs text-muted-foreground mt-0.5 truncate max-w-xs">{doc.fileName}</p>
-                      {doc.documentRequest && (
-                        <p className="text-xs text-brand-navy mt-0.5 max-w-xs">
-                          For: {doc.documentRequest.title}
-                        </p>
-                      )}
+                    <div className="flex items-start gap-2">
+                      <DocumentChatLauncher
+                        documentId={doc.id}
+                        docTitle={doc.title}
+                        forRequest={doc.documentRequest?.title ?? null}
+                        initialUnread={unreadByDoc.get(doc.id) ?? 0}
+                        isStaff
+                      />
+                      <div className="min-w-0">
+                        <span className="font-medium text-foreground">{doc.title}</span>
+                        <p className="text-xs text-muted-foreground mt-0.5 truncate max-w-xs">{doc.fileName}</p>
+                        {doc.documentRequest && (
+                          <p className="text-xs text-brand-navy mt-0.5 max-w-xs">
+                            For: {doc.documentRequest.title}
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </td>
                   <td className="py-3 pr-4 text-muted-foreground hidden sm:table-cell capitalize">

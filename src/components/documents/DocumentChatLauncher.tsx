@@ -20,9 +20,11 @@ interface Props {
   docTitle: string;
   forRequest?: string | null;
   initialUnread: number;
+  /** Staff side: own messages on the right, client on the left; opens the staff document page. */
+  isStaff?: boolean;
 }
 
-export function DocumentChatLauncher({ documentId, docTitle, forRequest, initialUnread }: Props) {
+export function DocumentChatLauncher({ documentId, docTitle, forRequest, initialUnread, isStaff = false }: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [unread, setUnread] = useState(initialUnread);
@@ -31,6 +33,9 @@ export function DocumentChatLauncher({ documentId, docTitle, forRequest, initial
   const [body, setBody] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [sending, startSend] = useTransition();
+
+  // The shared conversation (client-visible messages); internal staff notes stay on the detail page.
+  const thread = comments.filter((c) => !c.isInternal);
 
   async function load() {
     setLoading(true);
@@ -112,11 +117,11 @@ export function DocumentChatLauncher({ documentId, docTitle, forRequest, initial
             <div className="flex-1 space-y-3 overflow-y-auto bg-brand-greyLight/40 px-4 py-3">
               {loading ? (
                 <p className="text-sm text-muted-foreground">Loading…</p>
-              ) : comments.length === 0 ? (
+              ) : thread.length === 0 ? (
                 <p className="py-6 text-center text-sm text-muted-foreground">No messages yet about this document.</p>
               ) : (
-                comments.map((c) => {
-                  const mine = c.author.role === "CLIENT_USER";
+                thread.map((c) => {
+                  const mine = isStaff ? c.author.role !== "CLIENT_USER" : c.author.role === "CLIENT_USER";
                   return (
                     <div key={c.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
                       <div
@@ -125,7 +130,7 @@ export function DocumentChatLauncher({ documentId, docTitle, forRequest, initial
                         }`}
                       >
                         <p className={`mb-0.5 text-[11px] ${mine ? "text-white/75" : "text-muted-foreground"}`}>
-                          {mine ? "You" : c.author.name ?? "Accountant"} · {formatDateTime(c.createdAt)}
+                          {mine ? "You" : c.author.name ?? (isStaff ? "Client" : "Accountant")} · {formatDateTime(c.createdAt)}
                         </p>
                         <p className="whitespace-pre-wrap text-sm">{c.body}</p>
                       </div>
@@ -142,7 +147,7 @@ export function DocumentChatLauncher({ documentId, docTitle, forRequest, initial
                   rows={2}
                   value={body}
                   onChange={(e) => setBody(e.target.value)}
-                  placeholder="Reply to your accountant…"
+                  placeholder={isStaff ? "Reply to the client…" : "Reply to your accountant…"}
                   className="flex-1 rounded-md border border-brand-greyBorder px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-navy"
                 />
                 <button
@@ -157,7 +162,7 @@ export function DocumentChatLauncher({ documentId, docTitle, forRequest, initial
               </div>
               {error && <p className="text-xs text-red-600">{error}</p>}
               <Link
-                href={`/portal/documents/${documentId}`}
+                href={isStaff ? `/documents/${documentId}` : `/portal/documents/${documentId}`}
                 onClick={() => setOpen(false)}
                 className="inline-flex items-center gap-1 text-xs text-brand-navy hover:underline"
               >
