@@ -15,10 +15,9 @@ services:
     envVars:
       - key: NODE_VERSION
         value: 20.11.0
-      - key: DATABASE_URL
-        fromDatabase:
-          name: barrana-crm-db
-          property: connectionString
+      # DATABASE_URL is set manually in the Render dashboard (Environment tab) so build
+      # and runtime use the same database. Do NOT bind it to a blueprint database here —
+      # that caused the build's `prisma db push` to target a different DB than runtime.
       - key: AUTH_SECRET
         generateValue: true
       - key: NEXTAUTH_URL
