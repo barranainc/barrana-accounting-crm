@@ -13,6 +13,11 @@ export interface QbExportTransaction {
   /** Positive magnitude; `direction` carries the sign. */
   amount: number;
   direction: "DEBIT" | "CREDIT";
+  /** Chart-of-Accounts mapping chosen during review (optional). */
+  accountNumber?: string | null;
+  accountName?: string | null;
+  accountType?: string | null;
+  accountDetailType?: string | null;
 }
 
 export interface QbExportInput {

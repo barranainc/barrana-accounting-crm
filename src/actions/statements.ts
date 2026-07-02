@@ -204,7 +204,14 @@ interface EditableTransaction {
   amount: number;
   direction: TxnDirection;
   excluded: boolean;
+  // Chart-of-Accounts mapping ("" from the UI → stored as null).
+  accountName?: string;
+  accountNumber?: string;
+  accountType?: string;
+  accountDetailType?: string;
 }
+
+const orNull = (v: string | undefined) => (v && v.trim() ? v : null);
 
 /** Bulk-save the review table — edits + exclude toggles for every row at once. */
 export async function saveStatementTransactions(statementId: string, rows: EditableTransaction[]) {
@@ -224,6 +231,10 @@ export async function saveStatementTransactions(statementId: string, rows: Edita
           amount: Math.abs(Number(r.amount) || 0),
           direction: normaliseDirection(r.direction),
           excluded: !!r.excluded,
+          accountName: orNull(r.accountName),
+          accountNumber: orNull(r.accountNumber),
+          accountType: orNull(r.accountType),
+          accountDetailType: orNull(r.accountDetailType),
         },
       })
     )

@@ -611,6 +611,11 @@ model StatementTransaction {
   direction   TxnDirection
   balance     Decimal?     @db.Decimal(14, 2) // running balance if present on the statement
   category    String?      // QuickBooks account/category guess (editable)
+  // Chart-of-Accounts mapping (chosen in the review table; drives categorised export).
+  accountNumber     String? // e.g. "6201"
+  accountName       String? // exact QuickBooks account name, e.g. "Bank Charges"
+  accountType       String? // e.g. "Expenses"
+  accountDetailType String? // e.g. "Bank charges"
   reference   String?      // cheque number / reference id
   excluded    Boolean      @default(false) // staff can drop a row from the export
   sortIndex   Int          @default(0)

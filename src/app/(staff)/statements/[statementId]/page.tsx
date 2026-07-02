@@ -43,6 +43,10 @@ export default async function StatementDetailPage({
     amount: Number(t.amount),
     direction: t.direction,
     excluded: t.excluded,
+    accountName: t.accountName ?? "",
+    accountNumber: t.accountNumber ?? "",
+    accountType: t.accountType ?? "",
+    accountDetailType: t.accountDetailType ?? "",
   }));
 
   // ── Inline server actions ──
@@ -68,7 +72,7 @@ export default async function StatementDetailPage({
       : "Re-extract";
 
   return (
-    <div className="max-w-5xl">
+    <div className="max-w-6xl">
       {/* Breadcrumb */}
       <div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
         <Link href="/statements" className="hover:text-brand-navy flex items-center gap-1">

@@ -46,6 +46,10 @@ export async function GET(req: Request, { params }: { params: Promise<{ statemen
       description: t.description,
       amount: Number(t.amount),
       direction: t.direction,
+      accountNumber: t.accountNumber,
+      accountName: t.accountName,
+      accountType: t.accountType,
+      accountDetailType: t.accountDetailType,
     })),
   };
 
