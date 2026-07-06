@@ -170,7 +170,15 @@ export async function processBankStatement(statementId: string) {
       metadata: { model: result.model, transactionCount: result.transactions.length },
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
+    const raw = err instanceof Error ? err.message : String(err);
+    // The source file lives on the host's local disk. On Render (and any host with
+    // an ephemeral filesystem) that disk is wiped on every deploy, so a previously
+    // uploaded PDF can be gone by the time someone re-extracts. Surface that in
+    // plain language instead of a raw ENOENT.
+    const missingFile = /ENOENT|no such file|not found/i.test(raw);
+    const message = missingFile
+      ? "The source file is no longer available on the server, so it can't be re-extracted. (The server's temporary storage was cleared — likely on a redeploy.) Please re-upload this statement. Any transactions already extracted are safe."
+      : raw;
     await db.bankStatement.update({
       where: { id: statementId },
       data: { status: "FAILED", errorMessage: message },
@@ -187,8 +195,9 @@ export async function processBankStatement(statementId: string) {
       entityId: statementId,
       metadata: { error: message },
     });
-    revalidatePath(`/statements/${statementId}`);
-    throw new Error(`Extraction failed: ${message}`);
+    // Deliberately NOT re-throwing: the statement is marked FAILED and the page's
+    // red banner shows `errorMessage`. Re-throwing surfaced a raw "server-side
+    // exception" page. Fall through to the revalidations below so the UI refreshes.
   }
 
   revalidatePath(`/statements/${statementId}`);
