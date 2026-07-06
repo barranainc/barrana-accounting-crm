@@ -249,7 +249,12 @@ export async function saveStatementTransactions(statementId: string, rows: Edita
     metadata: { rowCount: rows.length },
   });
 
-  revalidatePath(`/statements/${statementId}`);
+  // NOTE: deliberately NOT calling revalidatePath here. The review table is a
+  // client component that already holds the saved rows in its own state, so a
+  // server refetch is unnecessary. In production that refetch re-rendered this
+  // whole page (16 cards × ~3000 <option>s) right after every save — it reset the
+  // editor's "Saved" state and could surface a client-side exception. Fresh data
+  // still loads on the next navigation to the page.
 }
 
 export async function toggleTransactionExcluded(transactionId: string) {
