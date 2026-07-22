@@ -626,3 +626,18 @@ model StatementTransaction {
 
   @@index([statementId])
 }
+
+/// Single-row table (id is always "singleton") holding the OneDrive link.
+/// A personal Microsoft account can't grant app-only access, so we keep the
+/// delegated refresh token here and mint access tokens from it on demand.
+model OneDriveConnection {
+  id           String   @id @default("singleton")
+  accountEmail String?
+  accountName  String?
+  refreshToken String   @db.Text
+  driveId      String? // cached Graph drive id
+  rootFolderId String? // cached id of the "Barrana CRM" root folder
+  lastError    String?  @db.Text // set when a refresh fails so the UI can prompt a reconnect
+  connectedAt  DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}

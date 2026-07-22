@@ -51,6 +51,8 @@ export const AuditAction = {
   STATEMENT_TRANSACTIONS_UPDATED:  "STATEMENT_TRANSACTIONS_UPDATED",
   STATEMENT_REVIEWED:              "STATEMENT_REVIEWED",
   STATEMENT_EXPORTED:              "STATEMENT_EXPORTED",
+  ONEDRIVE_CONNECTED:              "ONEDRIVE_CONNECTED",
+  ONEDRIVE_DISCONNECTED:           "ONEDRIVE_DISCONNECTED",
 } as const;
 
 export type AuditAction = typeof AuditAction[keyof typeof AuditAction];
