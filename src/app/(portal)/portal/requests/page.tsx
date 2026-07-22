@@ -9,7 +9,8 @@ import { OverdueIndicator } from "@/components/shared/OverdueIndicator";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { formatDate } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
-import { FolderOpen, Upload } from "lucide-react";
+import { redirect } from "next/navigation";
+import { FolderOpen, Upload, AlertTriangle } from "lucide-react";
 
 export const metadata = { title: "Document Requests" };
 
@@ -26,7 +27,7 @@ const STATUS_DESCRIPTIONS: Record<string, string> = {
 export default async function PortalRequestsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string }>;
+  searchParams: Promise<{ status?: string; uploadError?: string }>;
 }) {
   const session = await requireClientUser();
   const scope = await getPortalScope(session.user.id);
@@ -39,7 +40,7 @@ export default async function PortalRequestsPage({
     );
   }
 
-  const { status } = await searchParams;
+  const { status, uploadError } = await searchParams;
 
   async function handleUpload(formData: FormData) {
     "use server";
@@ -48,18 +49,33 @@ export default async function PortalRequestsPage({
     const clientId = formData.get("clientId") as string;
     if (!file || !requestId || !clientId || file.size === 0) return;
     const bytes = await file.arrayBuffer();
-    await uploadDocument({
-      clientId,
-      documentRequestId: requestId,
-      title: file.name.replace(/\.[^.]+$/, "").replace(/[-_]/g, " "),
-      documentType: "OTHER",
-      category: "GENERAL",
-      visibility: "CLIENT_VISIBLE",
-      fileBuffer: Buffer.from(bytes),
-      fileName: file.name,
-      mimeType: file.type || "application/octet-stream",
-      fileSize: file.size,
-    });
+
+    // Anything can go wrong here (file type, size, storage being unreachable).
+    // Catch it so the client gets a readable message instead of Next.js's raw
+    // "server-side exception" page. `redirect` throws, so it runs after the catch.
+    let failure: string | null = null;
+    try {
+      await uploadDocument({
+        clientId,
+        documentRequestId: requestId,
+        title: file.name.replace(/\.[^.]+$/, "").replace(/[-_]/g, " "),
+        documentType: "OTHER",
+        category: "GENERAL",
+        visibility: "CLIENT_VISIBLE",
+        fileBuffer: Buffer.from(bytes),
+        fileName: file.name,
+        mimeType: file.type || "application/octet-stream",
+        fileSize: file.size,
+      });
+    } catch (e) {
+      const detail = e instanceof Error ? e.message : String(e);
+      console.error("[portal] document upload failed:", detail);
+      // Storage problems are ours to fix, not something the client can act on.
+      failure = /onedrive|storage|ENOENT|network|fetch/i.test(detail)
+        ? "We couldn't save your file just now. Please try again in a few minutes — if it keeps happening, let your accountant know."
+        : detail;
+    }
+    if (failure) redirect(`/portal/requests?uploadError=${encodeURIComponent(failure)}`);
     revalidatePath("/portal/requests");
   }
 
@@ -96,6 +112,16 @@ export default async function PortalRequestsPage({
   return (
     <div>
       <PageHeader title="Document Requests" description={`${requests.length} request${requests.length !== 1 ? "s" : ""}`} />
+
+      {uploadError && (
+        <div className="mb-5 flex items-start gap-2 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+          <div>
+            <p className="font-medium">Upload didn&apos;t go through</p>
+            <p className="text-red-600/90">{uploadError}</p>
+          </div>
+        </div>
+      )}
 
       {/* Filter */}
       <form className="mb-5 flex flex-wrap gap-3">

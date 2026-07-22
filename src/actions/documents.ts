@@ -51,11 +51,11 @@ export async function uploadDocument(opts: UploadDocumentOpts) {
     throw new Error(`File too large. Maximum size is ${process.env.MAX_FILE_SIZE_MB ?? "25"} MB.`);
   }
 
-  const storagePath = generateStoragePath(opts.clientId, opts.fileName);
-
-  // Save file first — if storage fails, no DB record is created
-  await storage.save({
-    path: storagePath,
+  // Save the file first — if storage fails, no DB record is created. Persist the
+  // path the provider hands back, not the one we suggested: OneDrive returns its
+  // own item reference, and that is what later reads/deletes need.
+  const storagePath = await storage.save({
+    path: generateStoragePath(opts.clientId, opts.fileName),
     buffer: opts.fileBuffer,
     mimeType: opts.mimeType,
     fileName: opts.fileName,
@@ -150,8 +150,13 @@ export async function uploadDocumentVersion(opts: UploadDocumentOpts & { replace
   if (!ALLOWED_MIME_TYPES.includes(opts.mimeType)) throw new Error("File type not allowed");
   if (opts.fileSize > MAX_FILE_BYTES) throw new Error("File too large");
 
-  const storagePath = generateStoragePath(opts.clientId, opts.fileName);
-  await storage.save({ path: storagePath, buffer: opts.fileBuffer, mimeType: opts.mimeType, fileName: opts.fileName });
+  // Persist the path the provider returns — see uploadDocument for why.
+  const storagePath = await storage.save({
+    path: generateStoragePath(opts.clientId, opts.fileName),
+    buffer: opts.fileBuffer,
+    mimeType: opts.mimeType,
+    fileName: opts.fileName,
+  });
 
   // prev.rootDocumentId is already the chain root (self-rooted on v1 creation)
   const rootId = prev.rootDocumentId ?? prev.id;
