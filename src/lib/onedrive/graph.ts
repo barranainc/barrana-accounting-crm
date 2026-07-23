@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import type { Readable } from "stream";
+import { Readable } from "stream";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Microsoft Graph / OneDrive client.
@@ -307,14 +307,17 @@ export async function itemExists(itemId: string): Promise<boolean> {
 export async function downloadItem(itemId: string): Promise<{ stream: Readable; size: number; name: string; mimeType: string }> {
   const meta = await getItem(itemId);
   const res = await graph(`/me/drive/items/${itemId}/content`);
-  if (!res.ok || !res.body) {
+  if (!res.ok) {
     throw new Error(`OneDrive download failed (${res.status})`);
   }
-  const { Readable: NodeReadable } = await import("stream");
-  const stream = NodeReadable.fromWeb(res.body as Parameters<typeof NodeReadable.fromWeb>[0]);
+  // Read the whole file into a buffer and hand back a Readable from it. Our files
+  // are small (<= the upload size limit), and this avoids Readable.fromWeb, which
+  // is unreliable once bundled by Next.js (it came through as undefined in the
+  // server bundle even though it works under plain Node).
+  const buf = Buffer.from(await res.arrayBuffer());
   return {
-    stream: stream as unknown as Readable,
-    size: meta.size ?? 0,
+    stream: Readable.from(buf),
+    size: meta.size ?? buf.length,
     name: meta.name,
     mimeType: meta.file?.mimeType ?? "application/octet-stream",
   };
