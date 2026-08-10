@@ -47,6 +47,7 @@ export default async function EditClientPage({
           industry:       client.industry ?? undefined,
           businessNumber: client.businessNumber ?? undefined,
           hstNumber:      client.hstNumber ?? undefined,
+          fiscalYearEnd:  client.fiscalYearEnd ?? undefined,
           addressLine1:   client.addressLine1 ?? undefined,
           addressLine2:   client.addressLine2 ?? undefined,
           city:           client.city ?? undefined,

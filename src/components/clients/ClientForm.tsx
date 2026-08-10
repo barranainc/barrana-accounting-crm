@@ -27,6 +27,7 @@ const schema = z.object({
   industry:       z.string().optional(),
   businessNumber: z.string().optional(),
   hstNumber:      z.string().optional(),
+  fiscalYearEnd:  z.string().optional(),
   addressLine1:   z.string().optional(),
   addressLine2:   z.string().optional(),
   city:           z.string().optional(),
@@ -182,6 +183,11 @@ export function ClientForm({ mode, clientId, defaultValues }: ClientFormProps) {
           <div className="space-y-1.5">
             <Label htmlFor="hstNumber">HST/GST number</Label>
             <Input id="hstNumber" {...register("hstNumber")} placeholder="123456789 RT0001" />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="fiscalYearEnd">Fiscal year end</Label>
+            <Input id="fiscalYearEnd" {...register("fiscalYearEnd")} placeholder="December 31" />
           </div>
         </div>
       </div>

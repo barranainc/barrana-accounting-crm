@@ -27,6 +27,7 @@ export function ClientOverviewTab({ client }: ClientOverviewTabProps) {
         <InfoRow label="Industry" value={client.industry} />
         <InfoRow label="Business number" value={client.businessNumber} />
         <InfoRow label="HST / GST number" value={client.hstNumber} />
+        <InfoRow label="Fiscal year end" value={client.fiscalYearEnd} />
       </SectionCard>
 
       {/* Contact & address */}

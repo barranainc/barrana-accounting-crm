@@ -15,6 +15,7 @@ const clientSchema = z.object({
   industry: z.string().optional(),
   businessNumber: z.string().optional(),
   hstNumber: z.string().optional(),
+  fiscalYearEnd: z.string().optional(),
   primaryEmail: z.string().email("Valid email required"),
   primaryPhone: z.string().optional(),
   addressLine1: z.string().optional(),

@@ -205,6 +205,7 @@ model Client {
   industry       String?
   businessNumber String?
   hstNumber      String?
+  fiscalYearEnd  String?
   primaryEmail   String
   primaryPhone   String?
   addressLine1   String?
